@@ -27,6 +27,31 @@ if TYPE_CHECKING:
 LOG = get_logger()
 
 
+def _remove_gallery_files(config: Config, item: ItemDTO) -> int:
+    if item.downloader != "gallery-dl" or not isinstance(item.extras, dict):
+        return 0
+
+    gallery_files = item.extras.get("gallery_files")
+    if not isinstance(gallery_files, list):
+        return 0
+
+    removed = 0
+    seen: set[str] = set()
+    for media in gallery_files:
+        if not isinstance(media, dict) or not isinstance(media.get("filename"), str):
+            continue
+        filename = media["filename"]
+        relative = f"{item.folder}/{filename}" if item.folder else filename
+        if relative in seen:
+            continue
+        seen.add(relative)
+        path = Path(calc_download_path(config.download_path, relative, create_path=False))
+        if path.is_file():
+            path.unlink(missing_ok=True)
+            removed += 1
+    return removed
+
+
 class DownloadQueue(metaclass=Singleton):
     def __init__(self, config: Config | None = None):
         # Import here to avoid circular import with DataStore
@@ -386,7 +411,12 @@ class DownloadQueue(metaclass=Singleton):
                 },
             )
 
-            if remove_file and "finished" == item.info.status and item.info.filename:
+            if remove_file and "finished" == item.info.status and item.info.downloader == "gallery-dl":
+                try:
+                    removed_files += _remove_gallery_files(self.config, item.info)
+                except Exception:
+                    LOG.exception("Failed to remove gallery files for '%s'.", item.info.title)
+            elif remove_file and "finished" == item.info.status and item.info.filename:
                 filename = str(item.info.filename)
                 if item.info.folder:
                     filename = f"{item.info.folder}/{item.info.filename}"
@@ -529,7 +559,12 @@ class DownloadQueue(metaclass=Singleton):
                 },
             )
 
-            if remove_file and "finished" == item.info.status and item.info.filename:
+            if remove_file and "finished" == item.info.status and item.info.downloader == "gallery-dl":
+                try:
+                    removed_files += _remove_gallery_files(self.config, item.info)
+                except Exception:
+                    LOG.exception("Failed to remove gallery files for '%s'.", item.info.title)
+            elif remove_file and "finished" == item.info.status and item.info.filename:
                 filename = str(item.info.filename)
                 if item.info.folder:
                     filename = f"{item.info.folder}/{item.info.filename}"

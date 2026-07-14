@@ -148,6 +148,11 @@ async def add(
         dict[str, str]: Status dict with "status" and optional "msg" keys
 
     """
+    if item.downloader == "gallery-dl":
+        from app.features.gallerydl.processor import add_gallery
+
+        return await add_gallery(queue, item)
+
     _preset: Preset | None = Presets.get_instance().get(item.preset)
     logs = []
 

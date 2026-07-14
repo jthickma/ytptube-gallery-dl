@@ -104,7 +104,26 @@
                   </div>
 
                   <div v-if="showExtras" class="space-y-3 ytp-border-top-soft pt-4">
-                    <UFormField label="Preset" :ui="fieldUi" class="w-full">
+                    <UFormField label="Downloader" :ui="fieldUi" class="w-full">
+                      <USelectMenu
+                        v-model="formDownloader"
+                        :items="downloaderItems"
+                        value-key="value"
+                        label-key="label"
+                        color="neutral"
+                        size="lg"
+                        class="w-full"
+                        :search-input="false"
+                        :disabled="isFormDisabled"
+                      />
+                    </UFormField>
+
+                    <UFormField
+                      v-if="formDownloader === 'yt-dlp'"
+                      label="Preset"
+                      :ui="fieldUi"
+                      class="w-full"
+                    >
                       <template #label>
                         <span class="inline-flex items-center gap-2 font-semibold">
                           <UIcon name="i-lucide-sliders-horizontal" class="size-4 text-toned" />
@@ -129,7 +148,7 @@
                     </UFormField>
 
                     <div
-                      v-if="configStore.dl_fields.length > 0"
+                      v-if="formDownloader === 'yt-dlp' && configStore.dl_fields.length > 0"
                       class="grid gap-3 md:grid-cols-2 xl:grid-cols-3"
                     >
                       <DLInput
@@ -662,6 +681,17 @@
           </Transition>
 
           <UModal
+            v-if="galleryItem"
+            :open="Boolean(galleryItem)"
+            title="Gallery"
+            :dismissible="true"
+            :ui="{ content: 'w-full sm:max-w-6xl', body: 'p-0' }"
+            @update:open="(open) => !open && (galleryItem = null)"
+          >
+            <template #body><GalleryViewer :item="galleryItem" /></template>
+          </UModal>
+
+          <UModal
             v-if="videoItem"
             :open="videoOpen"
             title="Video"
@@ -726,6 +756,7 @@ import { useNotification } from '~/composables/useNotification';
 import EmbedPlayer from '~/components/EmbedPlayer.vue';
 import { getEmbedable, isEmbedable } from '~/utils/embedable';
 import { mediaProfileLabel } from '~/utils/mediaProfile';
+import { hasGalleryFiles } from '~/utils/gallery';
 import {
   ag,
   formatTime,
@@ -769,6 +800,7 @@ const {
 
 const embedUrl = ref('');
 const videoItem = ref<StoreItem | null>(null);
+const galleryItem = ref<StoreItem | null>(null);
 const playingNow = ref(false);
 const autoRefreshInterval = ref<ReturnType<typeof setInterval> | null>(null);
 const hadSocketDisconnect = ref(false);
@@ -785,6 +817,11 @@ const videoOpen = computed<boolean>({
 
 const formUrl = ref('');
 const formPreset = ref(app.value.default_preset || '');
+const formDownloader = ref<'yt-dlp' | 'gallery-dl'>('yt-dlp');
+const downloaderItems = [
+  { label: 'yt-dlp', value: 'yt-dlp' as const },
+  { label: 'gallery-dl', value: 'gallery-dl' as const },
+];
 const addInProgress = ref(false);
 const showExtras = ref(false);
 const isRefreshing = ref(false);
@@ -931,7 +968,11 @@ const addDownload = async (): Promise<void> => {
     return false;
   };
 
-  if (dlFields.value && Object.keys(dlFields.value).length > 0) {
+  if (
+    formDownloader.value === 'yt-dlp' &&
+    dlFields.value &&
+    Object.keys(dlFields.value).length > 0
+  ) {
     const joined = [];
 
     for (const [key, value] of Object.entries(dlFields.value)) {
@@ -963,6 +1004,7 @@ const addDownload = async (): Promise<void> => {
       preset: formPreset.value || app.value.default_preset,
       cli: cli || '',
       auto_start: true,
+      downloader: formDownloader.value,
     },
   ];
 
@@ -1029,6 +1071,10 @@ const resolveThumbnail = (item: StoreItem): string => {
 };
 
 const openPlayer = (item: StoreItem): void => {
+  if (hasGalleryFiles(item)) {
+    galleryItem.value = item;
+    return;
+  }
   if (item.filename) {
     videoItem.value = item;
     return;
@@ -1337,6 +1383,7 @@ const requeueItem = async (item: StoreItem): Promise<void> => {
     cookies: item.cookies,
     cli: item.cli,
     auto_start: item.auto_start ?? true,
+    downloader: item.downloader || 'yt-dlp',
   };
 
   if (item.extras && Object.keys(item.extras).length > 0) {

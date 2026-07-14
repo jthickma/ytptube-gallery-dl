@@ -19,6 +19,9 @@ This document describes the available endpoints and their usage. All endpoints r
     - [POST /api/yt-dlp/convert](#post-apiyt-dlpconvert)
     - [POST /api/yt-dlp/command/](#post-apiyt-dlpcommand)
     - [GET /api/yt-dlp/url/info](#get-apiyt-dlpurlinfo)
+    - [GET /api/gallery-dl/options](#get-apigallery-dloptions)
+    - [POST /api/gallery-dl/convert](#post-apigallery-dlconvert)
+    - [POST /api/gallery-dl/command](#post-apigallery-dlcommand)
     - [GET /api/history/add](#get-apihistoryadd)
     - [POST /api/history](#post-apihistory)
     - [DELETE /api/history](#delete-apihistory)
@@ -322,6 +325,43 @@ or an error:
 
 ---
 
+### GET /api/gallery-dl/options
+**Purpose**: Return the pinned gallery-dl version and its CLI option metadata. Options with `ignored: true` are managed by YTPTube and cannot be supplied in a queued job.
+
+**Response**:
+```json
+{
+  "version": "1.32.5",
+  "options": [
+    { "flags": ["--range"], "description": "...", "group": "Selection", "ignored": false }
+  ]
+}
+```
+
+### POST /api/gallery-dl/convert
+**Purpose**: Validate and tokenize gallery-dl CLI flags without running a download.
+
+**Body**: `{ "args": "--range 1-5 --write-metadata" }`
+
+**Response**: `{ "args": ["--range", "1-5", "--write-metadata"] }`
+
+### POST /api/gallery-dl/command
+**Purpose**: Build a gallery-dl console command. Console access must be enabled. Add `?full=true` to include the pinned version and argument array.
+
+**Body**:
+```json
+{
+  "url": "https://example.com/gallery/1",
+  "folder": "galleries",
+  "template": "{id}.{extension}",
+  "cli": "--range 1-5"
+}
+```
+
+The destination, non-interactive mode, configuration loading, and UI-provided cookie file are controlled by YTPTube. Output-only modes such as `--get-urls`, `--dump-json`, `--simulate`, `--no-download`, custom print destinations, and external configuration files are rejected for queue jobs.
+
+---
+
 ### GET /api/history/add
 **Purpose**: **(Quick Add)** Add a single URL to the download queue via GET.  
 
@@ -361,6 +401,7 @@ or an error:
   "template": "%(title)s.%(ext)s", // -- optional. The filename template to use for this item.
   "cli": "--write-subs --embed-subs", // -- optional. Additional command options for yt-dlp to apply to this item.
   "auto_start": true, // -- optional. Whether to auto-start the download after adding it. Defaults to true.
+  "downloader": "yt-dlp", // -- optional. "yt-dlp" (default) or "gallery-dl".
   "extras": {
     "ignore_conditions": ["123", "My Condition"] // -- optional. Skip matching conditions by id string or exact name for this request only. Use ["*"] to ignore all conditions.
   }
@@ -414,6 +455,8 @@ or an error:
   "remove_file": true
 }
 ```
+
+For `downloader: "gallery-dl"`, `cli` uses gallery-dl flags and `template` uses gallery-dl formatting. Presets, yt-dlp extraction, yt-dlp conditions, and the yt-dlp archive are not applied. Completed collection files are returned in `extras.gallery_files`.
 
 **Delete all finished items (filter mode):**
 ```json

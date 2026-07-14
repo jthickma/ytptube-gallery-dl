@@ -250,6 +250,11 @@ class StatusTracker:
         self.info.status = status.get("status", self.info.status)
         if "download_skipped" in status:
             self.info.download_skipped = bool(status.get("download_skipped"))
+        if gallery_files := status.get("gallery_files"):
+            self.info.extras["gallery_files"] = gallery_files
+            self.info.extras["gallery_count"] = len(gallery_files)
+        if status.get("file_size") is not None:
+            self.info.file_size = int(status["file_size"])
         self.info.msg = status.get("msg")
         self.info.postprocessor = status.get("postprocessor", None)
 
@@ -295,7 +300,10 @@ class StatusTracker:
 
         if final_name := status.get("final_name", None):
             self._candidate_filepath = None
+            gallery_size = self.info.file_size
             await self._finalize_file(Path(final_name))
+            if gallery_size is not None:
+                self.info.file_size = gallery_size
             self.info.status = "finished"
 
         if self.info.status != old_status or self.final_update:

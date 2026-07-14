@@ -51,6 +51,9 @@ class Item:
     auto_start: bool = True
     """If the item should be started automatically."""
 
+    downloader: str = "yt-dlp"
+    """Download engine to use. Existing requests default to yt-dlp."""
+
     def serialize(self) -> dict:
         """
         Serialize the item to a dictionary.
@@ -175,6 +178,12 @@ class Item:
 
         data: dict[str, Any] = {"url": url}
 
+        downloader = str(item.get("downloader") or "yt-dlp").strip().lower()
+        if downloader not in ("yt-dlp", "gallery-dl"):
+            msg = "downloader must be either 'yt-dlp' or 'gallery-dl'."
+            raise ValueError(msg)
+        data["downloader"] = downloader
+
         preset: str | None = item.get("preset")
         if preset and isinstance(preset, str) and preset != Item._default_preset():
             from app.features.presets.service import Presets
@@ -211,12 +220,17 @@ class Item:
         cli: str | None = item.get("cli")
         if cli and len(cli) > 2:
             try:
-                from app.features.ytdlp.utils import arg_converter
+                if downloader == "gallery-dl":
+                    from app.features.gallerydl.utils import parse_cli
 
-                arg_converter(args=cli, level=True)
+                    parse_cli(cli)
+                else:
+                    from app.features.ytdlp.utils import arg_converter
+
+                    arg_converter(args=cli, level=True)
                 data["cli"] = cli
             except Exception as e:
-                msg = f"Failed to parse command options for yt-dlp. {e!s}"
+                msg = str(e) if downloader == "gallery-dl" else f"Failed to parse command options for yt-dlp. {e!s}"
                 raise ValueError(msg) from e
 
         return Item(**data)
@@ -241,6 +255,8 @@ class Item:
             str | None: The archive ID if available, None otherwise.
 
         """
+        if self.downloader != "yt-dlp":
+            return None
         return get_archive_id(self.url).get("archive_id") if self.url else None
 
     def get_extractor(self) -> str | None:
@@ -251,6 +267,8 @@ class Item:
             str | None: The extractor key if available, None otherwise.
 
         """
+        if self.downloader != "yt-dlp":
+            return self.downloader
         return get_archive_id(self.url).get("ie_key") if self.url else None
 
     def get_ytdlp_opts(self) -> YTDLPOpts:
@@ -279,6 +297,8 @@ class Item:
             str | None: The archive file path if available, None otherwise.
 
         """
+        if self.downloader != "yt-dlp":
+            return None
         return self.get_ytdlp_opts().get_all().get("download_archive")
 
     def is_archived(self) -> bool:
@@ -374,9 +394,11 @@ class ItemDTO:
     extras: dict = field(default_factory=dict)
     """ Extra data associated with the item. """
     cli: str = ""
-    """ The command options for yt-dlp to be used for this download. """
+    """ The command options for the selected download engine. """
     auto_start: bool = True
     """ If the item should be started automatically. """
+    downloader: str = "yt-dlp"
+    """ Download engine used for this item. """
     is_archivable: bool | None = None
     """ If the item can be archived. """
     is_archived: bool | None = None
@@ -504,6 +526,8 @@ class ItemDTO:
         str | None: The archive ID if available, None otherwise.
 
         """
+        if self.downloader != "yt-dlp":
+            return None
         if self.archive_id:
             return self.archive_id
 
@@ -523,6 +547,8 @@ class ItemDTO:
             str | None: The extractor key if available, None otherwise.
 
         """
+        if self.downloader != "yt-dlp":
+            return self.downloader
         if self.archive_id:
             return self.archive_id.split(" ")[0]
 
@@ -591,6 +617,8 @@ class ItemDTO:
             str | None: The archive file path if available, None otherwise.
 
         """
+        if self.downloader != "yt-dlp":
+            return None
         if self._archive_file or self._recomputed or not self.archive_id:
             return self._archive_file
 

@@ -28,6 +28,11 @@ const bitrateLabel = (bitrate?: number | string): string => {
 };
 
 export const mediaProfileLabel = (item: StoreItem): string => {
+  if (item.downloader === 'gallery-dl' && item.extras?.gallery_count) {
+    const count = item.extras.gallery_count;
+    return `${count} media file${count === 1 ? '' : 's'}`;
+  }
+
   const profile = item.extras?.media_profile;
 
   if (!profile) {

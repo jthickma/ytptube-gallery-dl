@@ -9,12 +9,14 @@ export type item_request = {
   folder?: string;
   /** Output template for the downloaded item */
   template?: string;
-  /** Additional command line options for yt-dlp */
+  /** Additional command line options for the selected download engine */
   cli?: string;
   /** Cookies file for the download */
   cookies?: string;
   /** Auto start the download */
   auto_start?: boolean;
+  /** Download engine. Omitted requests continue to use yt-dlp. */
+  downloader?: 'yt-dlp' | 'gallery-dl';
   /** Extras data for the item */
   extras?: Record<string, any>;
 };

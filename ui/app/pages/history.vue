@@ -483,7 +483,7 @@
                 class="-mx-4 -mt-4 overflow-hidden border-b border-default bg-muted/20"
               >
                 <figure :class="['relative w-full overflow-hidden', thumbnailRatioClass]">
-                  <span v-if="item.filename" class="play-overlay" @click="video_item = item">
+                  <span v-if="item.filename" class="play-overlay" @click="openMedia(item)">
                     <span class="play-icon" aria-hidden="true">
                       <UIcon name="i-lucide-play" class="size-6 translate-x-px text-white" />
                     </span>
@@ -778,6 +778,19 @@
     </div>
 
     <UModal
+      v-if="gallery_item"
+      :open="Boolean(gallery_item)"
+      :dismissible="true"
+      :title="gallery_item?.title || 'Gallery'"
+      :ui="{ content: 'sm:max-w-6xl', body: 'p-0' }"
+      @update:open="(open) => !open && (gallery_item = null)"
+    >
+      <template #body>
+        <GalleryViewer :item="gallery_item" />
+      </template>
+    </UModal>
+
+    <UModal
       v-if="video_item"
       :open="videoOpen"
       :dismissible="true"
@@ -852,6 +865,7 @@ import {
 } from '~/utils';
 import { getEmbedable, isEmbedable } from '~/utils/embedable';
 import { mediaProfileLabel } from '~/utils/mediaProfile';
+import { hasGalleryFiles } from '~/utils/gallery';
 import { requirePageShell } from '~/utils/topLevelNavigation';
 
 const config = useYtpConfig();
@@ -900,6 +914,7 @@ const selectedElms = ref<string[]>([]);
 const masterSelectAll = ref(false);
 const embed_url = ref('');
 const video_item = ref<StoreItem | null>(null);
+const gallery_item = ref<StoreItem | null>(null);
 const playingNow = ref(false);
 const expandedMessages = reactive<Record<string, Set<string>>>({});
 
@@ -969,6 +984,14 @@ const close_info = (): void => {
 const closeVideo = (): void => {
   playingNow.value = false;
   video_item.value = null;
+};
+
+const openMedia = (item: StoreItem): void => {
+  if (hasGalleryFiles(item)) {
+    gallery_item.value = item;
+    return;
+  }
+  video_item.value = item;
 };
 
 const { handleOpenChange: handleVideoOpenChange, requestClose: requestCloseVideo } =
@@ -1139,10 +1162,12 @@ const itemActionGroups = (item: StoreItem): Array<Array<Record<string, unknown>>
 
   if (item.filename) {
     mediaActions.push({
-      label: 'Play video',
-      icon: 'i-lucide-play',
+      label: hasGalleryFiles(item)
+        ? `View gallery (${item.extras.gallery_files?.length || 0})`
+        : 'Play video',
+      icon: hasGalleryFiles(item) ? 'i-lucide-images' : 'i-lucide-play',
       onSelect: () => {
-        video_item.value = item;
+        openMedia(item);
       },
     });
 
@@ -1464,6 +1489,7 @@ const retryItem = async (
     cli: item?.cli,
     extras: toRaw(item?.extras || {}) ?? {},
     auto_start: item.auto_start,
+    downloader: item.downloader || 'yt-dlp',
   };
 
   await remove({ ids: [item._id], removeFile: remove_file });

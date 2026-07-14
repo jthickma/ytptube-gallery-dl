@@ -3,6 +3,7 @@ import os
 import re
 import sys
 import tomllib
+from PyInstaller.utils.hooks import collect_submodules
 
 block_cipher = None
 
@@ -70,6 +71,7 @@ hidden += [
     "dotenv",
     "app",
 ]
+hidden.extend(collect_submodules("gallery_dl"))
 
 hidden = sorted(set(hidden))
 

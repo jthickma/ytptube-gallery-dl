@@ -5,9 +5,7 @@
 ![Docker Pull](https://img.shields.io/docker/pulls/arabcoders/ytptube.svg)
 ![gchr Pull](https://ghcr-badge.elias.eu.org/shield/arabcoders/ytptube/ytptube)
 
-**YTPTube** is a web-based GUI for [yt-dlp](https://github.com/yt-dlp/yt-dlp), designed to make downloading videos from 
-video platforms easier and user-friendly. It supports downloading playlists, channels, live streams and 
-includes features like scheduling downloads, sending notifications, and built-in video player.
+**YTPTube** is a web-based GUI for [yt-dlp](https://github.com/yt-dlp/yt-dlp) and [gallery-dl](https://gdl-org.github.io/docs/), designed to make downloading video and gallery media easier and user-friendly. It supports downloading playlists, channels, live streams, image galleries, and social-media posts, and includes features like scheduling downloads, sending notifications, and built-in media viewers.
 
 # Screenshots
 Example of the regular view interface.
@@ -28,6 +26,7 @@ Example of the Simple mode interface.
 * Support for limits per extractor and overall global limit.
 * Queue multiple URLs at once.
 * Powerful presets system for applying `yt-dlp` options. with a pre-made preset for media servers users.
+* First-class `gallery-dl` downloads with per-request flags, cookies, filename templates, collection history, and in-browser image/video/audio viewing.
 * A simple file browser.
 * A built in video player **with support for sidecar external subtitles**. `Require ffmpeg to be in PATH in non-docker setups`.
 * Basic authentication support.
@@ -41,6 +40,14 @@ Example of the Simple mode interface.
 * Use playwright or selenium for extractors that require a browser. see [related FAQ](FAQ.md#how-to-use-the-browser-extractor).
 
 Please read the [FAQ](FAQ.md) for more information.
+
+## gallery-dl downloads
+
+Choose **gallery-dl** in the Downloader field before adding a URL. The advanced form then switches its option autocomplete, template help, compiled-command preview, and console command generation to gallery-dl. Presets, yt-dlp custom fields, archives, extraction, and all existing requests continue to use yt-dlp unless this field is explicitly changed.
+
+Each gallery URL is one queue/history job. Every file produced by the job is recorded in `extras.gallery_files`; open the completed history item to browse images and play supported video or audio without leaving YTPTube. Removing a completed gallery with file deletion enabled removes all recorded collection files.
+
+The stable dependency is intentionally exact-pinned (currently `gallery-dl==1.32.5`). A daily GitHub Actions workflow checks PyPI and opens a pull request that advances both the pin and `uv.lock` whenever a newer stable version is published.
 
 # Installation
 

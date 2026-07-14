@@ -1,0 +1,52 @@
+name: update-gallery-dl
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "20 0 * * *"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-gallery-dl:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Check for a new gallery-dl release
+        id: gallerydl
+        shell: bash
+        run: |
+          uv sync --frozen
+          VERSION=$(uv pip list --outdated | awk '$1 == "gallery-dl" {print $3}')
+          if [ -z "$VERSION" ]; then
+            echo "updated=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          uv add "gallery-dl==$VERSION"
+          echo "updated=true" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Create pull request
+        if: steps.gallerydl.outputs.updated == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          title: "[gallery-dl] automated update to ${{ steps.gallerydl.outputs.version }}"
+          commit-message: "Update gallery-dl to ${{ steps.gallerydl.outputs.version }}"
+          body: "Automated update of the exact gallery-dl dependency pin and uv lockfile."
+          branch: automation/gallery-dl-${{ steps.gallerydl.outputs.version }}
+          delete-branch: true
+

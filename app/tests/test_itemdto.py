@@ -68,11 +68,25 @@ class TestItemFormatAndBasics:
 
     def test_item_helpers(self):
         item = Item(url="https://example.com", extras={"a": 1}, cli="--x")
+        assert item.downloader == "yt-dlp"
         assert item.has_extras() is True
         assert item.has_cli() is True
         assert item.get("url") == "https://example.com"
         assert "url" in item.serialize()
         assert json.loads(item.json())["url"] == "https://example.com"
+
+    def test_gallery_item_does_not_use_ytdlp_archive(self):
+        item = Item.format(
+            {
+                "url": "https://example.com/gallery/1",
+                "downloader": "gallery-dl",
+                "cli": "--range 1-3",
+            }
+        )
+        assert item.downloader == "gallery-dl"
+        assert item.get_extractor() == "gallery-dl"
+        assert item.get_archive_id() is None
+        assert item.get_archive_file() is None
 
     @patch("app.library.ItemDTO.get_archive_id")
     def test_item_archive_id_and_is_archived(self, mock_get_id, tmp_path: Path):

@@ -34,6 +34,13 @@ type MediaProfile = {
   };
 };
 
+type GalleryFile = {
+  filename: string;
+  size: number;
+  media_type: 'image' | 'video' | 'audio' | 'file';
+  mimetype: string;
+};
+
 type StoreItem = {
   /** Unique identifier for the item */
   _id: string;
@@ -77,6 +84,8 @@ type StoreItem = {
   cli: string;
   /** If the item is auto-started */
   auto_start: boolean;
+  /** Download engine used for the item */
+  downloader: 'yt-dlp' | 'gallery-dl';
   /** Options for the item */
   options: Record<string, unknown>;
   /** Sidecar associated with the item. */
@@ -110,6 +119,12 @@ type StoreItem = {
     /** Live stream start time if available */
     is_premiere?: boolean;
     /** If the item is a premiere */
+    /** Files produced by a gallery-dl collection job */
+    gallery_files?: GalleryFile[];
+    /** Number of files produced by a gallery-dl collection job */
+    gallery_count?: number;
+    /** Download engine mirrored for older clients */
+    downloader?: 'gallery-dl';
   };
   /** The item temporary filename */
   tmpfilename?: string | null;
@@ -139,4 +154,4 @@ type StoreItem = {
   postprocessor?: string | null;
 };
 
-export type { ItemStatus, MediaProfile, StoreItem };
+export type { GalleryFile, ItemStatus, MediaProfile, StoreItem };

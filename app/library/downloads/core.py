@@ -103,6 +103,23 @@ class Download:
         This method runs in a separate process and performs the actual
         download using yt-dlp.
         """
+        if self.info.downloader == "gallery-dl":
+            from app.features.gallerydl.downloader import run_gallery_download
+
+            status_queue = self.status_queue
+            if status_queue is None:
+                msg = "status_queue must be initialized before _download(). Call start() first."
+                raise RuntimeError(msg)
+            run_gallery_download(
+                info=self.info,
+                download_dir=self.download_dir,
+                temp_dir=self.temp_dir or self.download_dir,
+                status_queue=status_queue,
+                logger=self.logger,
+            )
+            status_queue.put(Terminator())
+            return
+
         cookie_file: Path | None = None
         params: dict[str, Any] = {}
         download_skipped = False

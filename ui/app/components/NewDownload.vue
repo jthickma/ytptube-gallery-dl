@@ -74,9 +74,35 @@
           </UFormField>
 
           <div
-            class="grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.95fr)_11rem] xl:items-end"
+            class="grid gap-4 md:grid-cols-2 xl:grid-cols-[11rem_minmax(0,0.95fr)_minmax(0,1.95fr)_11rem] xl:items-end"
           >
             <UFormField
+              class="min-w-0 w-full"
+              label="Downloader"
+              :ui="downloadFieldUi"
+              description="Choose the engine for these URLs."
+            >
+              <template #label>
+                <span class="inline-flex items-center gap-2 font-semibold">
+                  <UIcon name="i-lucide-package-open" class="size-4 text-toned" />
+                  <span>Downloader</span>
+                </span>
+              </template>
+              <USelectMenu
+                v-model="form.downloader"
+                :items="downloaderItems"
+                value-key="value"
+                label-key="label"
+                color="neutral"
+                class="w-full"
+                size="lg"
+                :search-input="false"
+                :disabled="addInProgress"
+              />
+            </UFormField>
+
+            <UFormField
+              v-if="!isGallery"
               class="min-w-0 w-full"
               label="Preset"
               :ui="downloadFieldUi"
@@ -197,7 +223,7 @@
       <div v-if="showAdvanced" class="ytp-card p-4 sm:p-6 space-y-4">
         <div class="space-y-4">
           <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-12">
-            <div class="xl:col-span-2">
+            <div v-if="!isGallery" class="xl:col-span-2">
               <DLInput
                 id="force_download"
                 v-model="dlFields['--no-download-archive']"
@@ -223,7 +249,7 @@
               />
             </div>
 
-            <div class="xl:col-span-2">
+            <div v-if="!isGallery" class="xl:col-span-2">
               <DLInput
                 id="no_cache"
                 v-model="dlFields['--no-continue']"
@@ -251,19 +277,32 @@
                 icon="i-lucide-file-code-2"
                 :disabled="addInProgress"
                 :placeholder="
-                  getDefault('template', config.app.output_template || '%(title)s.%(ext)s')
+                  getDefault(
+                    'template',
+                    isGallery
+                      ? '{filename}.{extension}'
+                      : config.app.output_template || '%(title)s.%(ext)s',
+                  )
                 "
               >
                 <template #description>
                   <span>
                     See
                     <NuxtLink
+                      v-if="!isGallery"
                       target="_blank"
                       class="font-medium text-primary hover:underline"
                       to="https://github.com/yt-dlp/yt-dlp#output-template"
                     >
                       the yt-dlp output template page
                     </NuxtLink>
+                    <NuxtLink
+                      v-else
+                      target="_blank"
+                      class="font-medium text-primary hover:underline"
+                      to="https://gdl-org.github.io/docs/formatting.html"
+                      >gallery-dl string formatting</NuxtLink
+                    >
                     for info.
                   </span>
                 </template>
@@ -271,7 +310,7 @@
             </div>
 
             <UFormField
-              v-if="hasIgnoreConditionOptions"
+              v-if="!isGallery && hasIgnoreConditionOptions"
               class="md:col-span-2 xl:col-span-3 w-full"
               :ui="advancedEditorFieldUi"
             >
@@ -315,14 +354,14 @@
 
           <div class="grid gap-4 xl:grid-cols-2">
             <UFormField
-              label="Command options for yt-dlp"
+              :label="`Command options for ${isGallery ? 'gallery-dl' : 'yt-dlp'}`"
               class="w-full"
               :ui="advancedEditorFieldUi"
             >
               <template #label>
                 <span class="inline-flex items-center gap-2 font-semibold">
                   <UIcon name="i-lucide-terminal" class="size-4 text-toned" />
-                  <span>Command options for yt-dlp</span>
+                  <span>Command options for {{ isGallery ? 'gallery-dl' : 'yt-dlp' }}</span>
                 </span>
               </template>
 
@@ -333,22 +372,25 @@
                     class="font-medium text-primary hover:underline"
                     @click="showOptions = true"
                   >
-                    View all options
+                    View all {{ isGallery ? 'gallery-dl' : 'yt-dlp' }} options
                   </button>
-                  . Not all options are supported;
-                  <a
-                    target="_blank"
-                    href="https://github.com/arabcoders/ytptube/blob/master/app/features/ytdlp/utils.py#L29"
-                  >
-                    some are ignored
-                  </a>
+                  <template v-if="!isGallery"
+                    >. Not all options are supported;
+                    <a
+                      target="_blank"
+                      href="https://github.com/arabcoders/ytptube/blob/master/app/features/ytdlp/utils.py#L29"
+                    >
+                      some are ignored
+                    </a>
+                  </template>
+                  <span v-else>. Destination and output-mode flags are managed by YTPTube.</span>
                 </span>
               </template>
 
               <TextareaAutocomplete
                 id="cli_options"
                 v-model="form.cli"
-                :options="ytDlpOpt"
+                :options="isGallery ? galleryDLOpt : ytDlpOpt"
                 :placeholder="getDefault('cli', '')"
                 :disabled="addInProgress"
                 :rows="5"
@@ -407,7 +449,10 @@
             </UFormField>
           </div>
 
-          <div v-if="config.dl_fields.length > 0" class="grid gap-4 md:grid-cols-2 xl:grid-cols-2">
+          <div
+            v-if="!isGallery && config.dl_fields.length > 0"
+            class="grid gap-4 md:grid-cols-2 xl:grid-cols-2"
+          >
             <DLInput
               v-for="(fi, index) in sortedDLFields"
               :id="fi?.id || `dlf-${index}`"
@@ -437,6 +482,7 @@
 
           <div class="hidden flex-wrap items-center gap-2 sm:flex">
             <UButton
+              v-if="!isGallery"
               type="button"
               color="neutral"
               variant="outline"
@@ -468,7 +514,7 @@
               :disabled="!hasValidUrl"
               @click="testDownloadOptions"
             >
-              Show compiled yt-dlp options
+              Show compiled {{ isGallery ? 'gallery-dl' : 'yt-dlp' }} options
             </UButton>
           </div>
 
@@ -489,7 +535,7 @@
     <UModal
       v-if="showOptions"
       v-model:open="showOptions"
-      title="yt-dlp options"
+      :title="`${isGallery ? 'gallery-dl' : 'yt-dlp'} options`"
       :dismissible="true"
       :ui="{ content: 'sm:max-w-6xl', body: 'p-0' }"
     >
@@ -498,7 +544,8 @@
       </template>
 
       <template #body>
-        <YTDLPOptions />
+        <GalleryDLOptions v-if="isGallery" />
+        <YTDLPOptions v-else />
       </template>
     </UModal>
 
@@ -585,6 +632,11 @@ const showTestResults = ref<boolean>(false);
 const testResultsData = ref<any>(null);
 const dlFieldsExtra = ['--no-download-archive', '--no-continue'];
 const ytDlpOpt = ref<AutoCompleteOptions>([]);
+const galleryDLOpt = ref<AutoCompleteOptions>([]);
+const downloaderItems = [
+  { label: 'yt-dlp', value: 'yt-dlp' as const },
+  { label: 'gallery-dl', value: 'gallery-dl' as const },
+];
 const cookiesDropzoneRef = ref<InstanceType<typeof TextDropzone> | null>(null);
 const urlTextarea = ref<{ textareaRef?: HTMLTextAreaElement | null } | null>(null);
 
@@ -727,7 +779,10 @@ const form = useStorage<item_request>('local_config_v1', {
   template: '',
   folder: '',
   extras: {},
+  downloader: 'yt-dlp',
 }) as Ref<item_request>;
+
+const isGallery = computed(() => form.value.downloader === 'gallery-dl');
 
 const presetItems = computed(() => selectItems.value);
 const ignoreConditionOptions = computed(() =>
@@ -741,8 +796,9 @@ const hasIgnoreConditionOptions = computed(() =>
 );
 
 const mobileActionGroups = computed(() => {
-  const groups = [
-    [
+  const primaryActions: Array<Record<string, unknown>> = [];
+  if (!isGallery.value) {
+    primaryActions.push(
       {
         label: 'Custom Fields',
         icon: 'i-lucide-plus',
@@ -760,8 +816,10 @@ const mobileActionGroups = computed(() => {
             form.value.cli,
           ),
       },
-    ],
-  ] as Array<Array<Record<string, unknown>>>;
+    );
+  }
+
+  const groups = [primaryActions] as Array<Array<Record<string, unknown>>>;
 
   if (config.app.console_enabled) {
     groups[0]?.push(
@@ -772,7 +830,7 @@ const mobileActionGroups = computed(() => {
         onSelect: () => void runCliCommand(),
       },
       {
-        label: 'Show compiled yt-dlp options',
+        label: `Show compiled ${isGallery.value ? 'gallery-dl' : 'yt-dlp'} options`,
         icon: 'i-lucide-flask-conical',
         disabled: !hasValidUrl.value,
         onSelect: () => void testDownloadOptions(),
@@ -888,7 +946,7 @@ const addDownload = async () => {
 
   let form_cli = (form.value?.cli || '').trim();
 
-  if (dlFields.value && Object.keys(dlFields.value).length > 0) {
+  if (!isGallery.value && dlFields.value && Object.keys(dlFields.value).length > 0) {
     const joined = [];
     for (const [key, value] of Object.entries(dlFields.value)) {
       if (false === is_valid_dl_field(key)) {
@@ -930,6 +988,7 @@ const addDownload = async () => {
       cookies: form.value.cookies,
       cli: form_cli,
       auto_start: auto_start.value,
+      downloader: form.value.downloader || 'yt-dlp',
     } as item_request;
 
     if (form.value?.extras && Object.keys(form.value.extras).length > 0) {
@@ -1004,6 +1063,7 @@ const resetConfig = async () => {
     template: '',
     folder: '',
     extras: {},
+    downloader: 'yt-dlp',
   } as item_request;
   dlFields.value = {};
   showAdvanced.value = false;
@@ -1012,6 +1072,18 @@ const resetConfig = async () => {
 
 const convertOptions = async (args: string) => {
   try {
+    if (isGallery.value) {
+      const response = await request('/api/gallery-dl/convert', {
+        method: 'POST',
+        body: JSON.stringify({ args }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to parse gallery-dl options.');
+      }
+      return data.args;
+    }
+
     const response = await convertCliOptions(args);
 
     if (response.output_template) {
@@ -1070,6 +1142,26 @@ watch(
 onMounted(async () => {
   await nextTick();
 
+  if (!form.value.downloader) {
+    form.value.downloader = 'yt-dlp';
+  }
+
+  try {
+    const response = await request('/api/gallery-dl/options');
+    if (response.ok) {
+      const data = await response.json();
+      galleryDLOpt.value = (Array.isArray(data.options) ? data.options : [])
+        .filter((option: { ignored?: boolean }) => !option.ignored)
+        .flatMap((option: { flags?: string[]; description?: string }) =>
+          (option.flags || [])
+            .filter((flag) => flag.startsWith('--'))
+            .map((flag) => ({ value: flag, description: option.description || '' })),
+        );
+    }
+  } catch {
+    galleryDLOpt.value = [];
+  }
+
   if ('' === form.value?.preset) {
     form.value.preset = config.app.default_preset;
   }
@@ -1114,7 +1206,7 @@ const runCliCommand = async (): Promise<void> => {
 
   const { status } = await dialog.confirmDialog({
     title: 'Run CLI Command',
-    message: `This will generate a yt-dlp command and run it in the console. Continue?`,
+    message: `This will generate a ${isGallery.value ? 'gallery-dl' : 'yt-dlp'} command and run it in the console. Continue?`,
   });
 
   if (!status) {
@@ -1123,7 +1215,7 @@ const runCliCommand = async (): Promise<void> => {
 
   let form_cli = (form.value?.cli || '').trim();
 
-  if (dlFields.value && Object.keys(dlFields.value).length > 0) {
+  if (!isGallery.value && dlFields.value && Object.keys(dlFields.value).length > 0) {
     const joined = [];
     for (const [key, value] of Object.entries(dlFields.value)) {
       if (false === is_valid_dl_field(key)) {
@@ -1155,17 +1247,21 @@ const runCliCommand = async (): Promise<void> => {
   }
 
   try {
-    const resp = await request('/api/yt-dlp/command', {
-      method: 'POST',
-      body: JSON.stringify({
-        url: splitUrls(form.value.url).join(' '),
-        preset: form.value.preset,
-        folder: form.value.folder,
-        cookies: form.value.cookies,
-        template: form.value.template,
-        cli: form_cli,
-      }),
-    });
+    const resp = await request(
+      isGallery.value ? '/api/gallery-dl/command' : '/api/yt-dlp/command',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          url: splitUrls(form.value.url).join(' '),
+          preset: form.value.preset,
+          folder: form.value.folder,
+          cookies: form.value.cookies,
+          template: form.value.template,
+          cli: form_cli,
+          downloader: form.value.downloader || 'yt-dlp',
+        }),
+      },
+    );
 
     const json = (await resp.json()) as { command?: string; error?: string };
 
@@ -1198,7 +1294,7 @@ const testDownloadOptions = async (): Promise<void> => {
 
   let form_cli = (form.value?.cli || '').trim();
 
-  if (dlFields.value && Object.keys(dlFields.value).length > 0) {
+  if (!isGallery.value && dlFields.value && Object.keys(dlFields.value).length > 0) {
     const joined = [];
     for (const [key, value] of Object.entries(dlFields.value)) {
       if (false === is_valid_dl_field(key)) {
@@ -1223,17 +1319,21 @@ const testDownloadOptions = async (): Promise<void> => {
   }
 
   try {
-    const resp = await request('/api/yt-dlp/command?full=true', {
-      method: 'POST',
-      body: JSON.stringify({
-        url: form.value.url,
-        preset: form.value.preset,
-        folder: form.value.folder,
-        cookies: form.value.cookies,
-        template: form.value.template,
-        cli: form_cli,
-      }),
-    });
+    const resp = await request(
+      isGallery.value ? '/api/gallery-dl/command?full=true' : '/api/yt-dlp/command?full=true',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          url: form.value.url,
+          preset: form.value.preset,
+          folder: form.value.folder,
+          cookies: form.value.cookies,
+          template: form.value.template,
+          cli: form_cli,
+          downloader: form.value.downloader || 'yt-dlp',
+        }),
+      },
+    );
 
     const json = await resp.json();
 
@@ -1242,10 +1342,7 @@ const testDownloadOptions = async (): Promise<void> => {
       return;
     }
 
-    testResultsData.value = {
-      command: json.command,
-      yt_dlp: json.ytdlp,
-    };
+    testResultsData.value = json;
     showTestResults.value = true;
   } catch (error) {
     toast.error(error instanceof Error ? error.message : 'Failed to test download options');
@@ -1276,13 +1373,16 @@ const copyTestResults = () => {
 
 const isMultiLineInput = computed(() => !!form.value.url && form.value.url.includes('\n'));
 const hasFormatInConfig = computed(
-  (): boolean => !!form.value.cli?.match(/(?<!\S)(-f|--format)(=|\s)(\S+)/),
+  (): boolean => !isGallery.value && !!form.value.cli?.match(/(?<!\S)(-f|--format)(=|\s)(\S+)/),
 );
 
 const expand_description = (e: Event) =>
   toggleClass(e.target as HTMLElement, ['is-ellipsis', 'is-pre-wrap']);
 
 const getDefault = (type: 'cookies' | 'cli' | 'template' | 'folder', ret: string = '') => {
+  if (isGallery.value) {
+    return ret;
+  }
   if (false !== hasFormatInConfig.value || !form.value.preset) {
     return ret;
   }
