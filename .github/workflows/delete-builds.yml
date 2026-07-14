@@ -16,9 +16,11 @@ on:
 jobs:
   delete-builds:
     runs-on: ubuntu-latest
+    permissions:
+      packages: write
     steps:
       - uses: actions/delete-package-versions@v4
         with:
-          package-name: "ytptube"
+          package-name: ${{ github.event.repository.name }}
           package-type: "container"
           min-versions-to-keep: 20

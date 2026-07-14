@@ -1,9 +1,8 @@
 # YTPTube
 
-![Build Status](https://github.com/arabcoders/ytptube/actions/workflows/main.yml/badge.svg)
-![MIT License](https://img.shields.io/github/license/arabcoders/ytptube.svg)
-![Docker Pull](https://img.shields.io/docker/pulls/arabcoders/ytptube.svg)
-![gchr Pull](https://ghcr-badge.elias.eu.org/shield/arabcoders/ytptube/ytptube)
+![Build Status](https://github.com/jthickma/ytptube-gallery-dl/actions/workflows/main.yml/badge.svg)
+![MIT License](https://img.shields.io/github/license/jthickma/ytptube-gallery-dl.svg)
+![GHCR Pulls](https://ghcr-badge.elias.eu.org/shield/jthickma/ytptube-gallery-dl/ytptube-gallery-dl)
 
 **YTPTube** is a web-based GUI for [yt-dlp](https://github.com/yt-dlp/yt-dlp) and [gallery-dl](https://gdl-org.github.io/docs/), designed to make downloading video and gallery media easier and user-friendly. It supports downloading playlists, channels, live streams, image galleries, and social-media posts, and includes features like scheduling downloads, sending notifications, and built-in media viewers.
 
@@ -60,7 +59,7 @@ The stable dependency is intentionally exact-pinned (currently `gallery-dl==1.32
 mkdir -p ./{config,downloads/{files,tmp}} && docker run -itd --rm --user "${UID}:${UID}" --name ytptube \
 -e YTP_TEMP_PATH=/downloads/tmp -e YTP_DOWNLOAD_PATH=/downloads/files \
 -p 8081:8081 -v ./config:/config:rw -v ./downloads:/downloads:rw \
-ghcr.io/arabcoders/ytptube:latest
+ghcr.io/jthickma/ytptube-gallery-dl:latest
 ```
 
 ## Run using podman
@@ -69,7 +68,7 @@ ghcr.io/arabcoders/ytptube:latest
 mkdir -p ./{config,downloads/{files,tmp}} && podman run -itd --rm --userns=keep-id --name ytptube \
 -e YTP_TEMP_PATH=/downloads/tmp -e YTP_DOWNLOAD_PATH=/downloads/files \
 -p 8081:8081 -v ./config:/config:rw -v ./downloads:/downloads:rw \
-arabcoders/ytptube:latest
+ghcr.io/jthickma/ytptube-gallery-dl:latest
 ```
 
 Then you can access the WebUI at `http://localhost:8081`.
@@ -84,7 +83,7 @@ services:
     user: "${UID:-1000}:${UID:-1000}" # change this to your user id and group id.
     # comment out the above line and uncomment the below line if you are using podman-compose.
     #userns_mode: keep-id
-    image: ghcr.io/arabcoders/ytptube:latest
+    image: ghcr.io/jthickma/ytptube-gallery-dl:latest
     container_name: ytptube
     restart: unless-stopped
     environment:
