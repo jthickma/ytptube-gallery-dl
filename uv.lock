@@ -551,14 +551,14 @@ wheels = [
 
 [[package]]
 name = "gallery-dl"
-version = "1.32.5"
+version = "1.32.10"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b5/d3/1183e8994b48af8850c7eadc3881490d8671a7fb7d044bb839f9b6d028d7/gallery_dl-1.32.5.tar.gz", hash = "sha256:fd49fdefe9573dd04a2fd5bbe72a54325cdbd29f4a7cad760bdf2b9ff7e0e203", size = 720542, upload-time = "2026-06-30T08:16:16.584Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b6/21/90e2240a562ff95f4dbcab0541395876e005e23a83d8e44394440472c924/gallery_dl-1.32.10.tar.gz", hash = "sha256:9df27426e0230efe9e05066352f0e2080ef0981baa90790a0851e2e7b973d047", size = 746906, upload-time = "2026-08-29T08:22:05.48Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d6/9b/33540eb40ff707a22503376c2572a9dd3de243c174ebbeb7a8e972b7e5da/gallery_dl-1.32.5-py3-none-any.whl", hash = "sha256:85e530b18a3c0b5c8878735dd77362bd0c0b4e00a733ea4e17591dbe081852a4", size = 893394, upload-time = "2026-06-30T08:16:12.372Z" },
+    { url = "https://files.pythonhosted.org/packages/e5/05/3b74d85f6fe1ac8d46733a4723dcca9dd16b0c495606a420d712019f607d/gallery_dl-1.32.10-py3-none-any.whl", hash = "sha256:93736866d0da7aef2d49706c0d58832d4af7f173eca06dedb466dd9f2fdb1a11", size = 929905, upload-time = "2026-08-29T08:22:01.577Z" },
 ]
 
 [[package]]
@@ -2196,7 +2196,7 @@ requires-dist = [
     { name = "dateparser", specifier = ">=1.2.1" },
     { name = "debugpy", specifier = ">=1.8.1" },
     { name = "defusedxml", specifier = ">=0.7.1" },
-    { name = "gallery-dl", specifier = "==1.32.5" },
+    { name = "gallery-dl", specifier = "==1.32.10" },
     { name = "httpx", extras = ["brotli", "http2", "socks", "zstd"] },
     { name = "httpx-curl-cffi", specifier = ">=0.1.4" },
     { name = "jmespath", specifier = ">=1.0.1" },
