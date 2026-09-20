@@ -29,7 +29,7 @@ dependencies = [
   "brotlicffi",
   "anyio",
   "yt-dlp[default]",
-  "gallery-dl==1.32.5",
+  "gallery-dl==1.32.13",
   "platformdirs",
   "multidict==6.5.1",
   "dateparser>=1.2.1",
