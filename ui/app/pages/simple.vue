@@ -740,7 +740,9 @@
             @update:open="handleVideoOpenChange"
           >
             <template #body>
+              <GalleryView v-if="videoItem?.engine === 'gallerydl'" :item="videoItem" />
               <LazyVideoPlayer
+                v-else
                 type="default"
                 :isMuted="false"
                 autoplay="true"
@@ -791,6 +793,7 @@ import { useHistoryState } from '~/composables/useHistoryState';
 import { useMediaQuery } from '~/composables/useMediaQuery';
 import { usePresetOptions } from '~/composables/usePresetOptions';
 import { useNotification } from '~/composables/useNotification';
+import { detectDownloadEngine } from '~/utils/download-engine';
 import { getEmbedable, isEmbedable } from '~/utils/embedable';
 import { mediaProfileLabel } from '~/utils/mediaProfile';
 import {
@@ -1087,6 +1090,16 @@ const addDownload = async (): Promise<void> => {
     return;
   }
 
+  let engine: import('~/types/item').DownloadEngine;
+  try {
+    engine = await detectDownloadEngine({
+      url,
+      preset: formPreset.value || app.value.default_preset,
+    });
+  } catch (error) {
+    submitError.value = String(error);
+    return;
+  }
   let cli = '';
   const dlFieldsExtra = ['--no-download-archive'];
 
@@ -1102,7 +1115,7 @@ const addDownload = async (): Promise<void> => {
     return false;
   };
 
-  if (dlFields.value && Object.keys(dlFields.value).length > 0) {
+  if (engine !== 'gallerydl' && dlFields.value && Object.keys(dlFields.value).length > 0) {
     const joined = [];
 
     for (const [key, value] of Object.entries(dlFields.value)) {
@@ -1132,6 +1145,7 @@ const addDownload = async (): Promise<void> => {
     {
       url,
       preset: formPreset.value || app.value.default_preset,
+      engine,
       cli: cli || '',
       auto_start: true,
     },

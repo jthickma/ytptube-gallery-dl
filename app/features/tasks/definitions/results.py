@@ -11,6 +11,19 @@ from .utils import split_inspect_metadata
 
 
 class HandleTask(TaskSchema):
+    def get_engine(self) -> str:
+        from app.features.gallerydl.detect import resolve_engine
+        from app.features.presets.service import Presets
+
+        return resolve_engine(self.url, self.engine, Presets.get_instance().get(self.preset))
+
+    def get_archive_file(self) -> str | None:
+        if self.get_engine() == "gallerydl":
+            from app.features.gallerydl.utils import history_archive
+
+            return history_archive()
+        return self.get_ytdlp_opts().get_all().get("download_archive")
+
     def get_ytdlp_opts(self) -> YTDLPOpts:
         """
         Get the yt-dlp options for the task.
@@ -100,6 +113,26 @@ class HandleTask(TaskSchema):
 
         if not self.url:
             return ({}, False, "No URL found in task parameters.")
+
+        if self.get_engine() == "gallerydl":
+            from app.features.downloads.items import Item
+            from app.features.gallerydl.extractor import extract
+            from app.features.gallerydl.opts import build_options
+
+            item = Item(
+                url=self.url,
+                engine="gallerydl",
+                preset=self.preset,
+                gallerydl=self.gallerydl,
+                cli=self.cli,
+                folder=self.folder,
+                template=self.template,
+            )
+            try:
+                data = await extract(self.url, build_options(item), limit=0 if full else 1)
+                return (data, True, "")
+            except Exception as exc:
+                return ({}, False, str(exc))
 
         params = self.get_ytdlp_opts()
         if not full:

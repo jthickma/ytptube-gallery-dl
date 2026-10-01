@@ -1,6 +1,7 @@
 <template>
   <form id="presetForm" autocomplete="off" class="space-y-6" @submit.prevent="checkInfo">
     <FormSubmitError :message="action.message.value" @dismiss="action.clear" />
+    <DownloadEngineFields v-model:engine="form.engine" v-model:gallerydl="form.gallerydl" />
     <UAlert
       v-if="formError && hasFormContent"
       color="warning"
@@ -310,7 +311,7 @@
       </template>
 
       <template #body>
-        <YTDLPOptions />
+        <GalleryDLOptions v-if="form.engine === 'gallerydl'" /><YTDLPOptions v-else />
       </template>
     </UModal>
   </form>
@@ -318,6 +319,7 @@
 
 <script setup lang="ts">
 import { useStorage } from '@vueuse/core';
+import { convertGalleryOptions } from '~/utils/download-engine';
 import TextareaAutocomplete from '~/components/TextareaAutocomplete.vue';
 import TextDropzone from '~/components/TextDropzone.vue';
 import type { ImportedItem } from '~/types';
@@ -349,6 +351,8 @@ const form = reactive<Preset>({
   folder: '',
   template: '',
   cookies: '',
+  engine: 'auto',
+  gallerydl: '',
   cli: '',
   default: false,
   priority: 0,
@@ -408,6 +412,8 @@ watch(
       folder: '',
       template: '',
       cookies: '',
+      engine: 'auto',
+      gallerydl: '',
       cli: '',
       default: false,
       priority: 0,
@@ -504,6 +510,7 @@ const confirmImportOverwrite = async (): Promise<boolean> => {
 const convertOptions = async (args: string): Promise<Record<string, any> | null> => {
   action.clear();
   try {
+    if (form.engine === 'gallerydl') return await convertGalleryOptions(args);
     const response = await convertCliOptions(args);
 
     if (response.output_template) {
@@ -587,6 +594,8 @@ const importItem = async (): Promise<void> => {
     if (item.name) {
       form.name = normalizePresetName(item.name);
     }
+    form.engine = item.engine || 'auto';
+    form.gallerydl = item.gallerydl || '';
     if (item.cli) {
       form.cli = item.cli;
     }
@@ -641,6 +650,8 @@ const importExistingPreset = async (): Promise<void> => {
       return;
     }
 
+    form.engine = preset.engine || 'auto';
+    form.gallerydl = preset.gallerydl || '';
     form.cli = preset.cli || '';
     form.folder = preset.folder || '';
     form.template = preset.template || '';

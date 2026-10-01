@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import mimetypes
 import queue
 import time
 from email.utils import formatdate
@@ -98,6 +99,7 @@ class StatusTracker:
             "downloaded_bytes": self.info.downloaded_bytes,
             "total_bytes": self.info.total_bytes,
             "msg": self.info.msg,
+            "gallery_count": self.info.gallery_count,
         }
 
     def _emit_progress(self) -> None:
@@ -163,10 +165,21 @@ class StatusTracker:
 
             if filepath.is_file() and filepath.exists():
                 try:
-                    self.info.file_size = filepath.stat().st_size
+                    self.info.file_size = (
+                        sum(file.get("size", 0) for file in self.info.files)
+                        if self.info.engine == "gallerydl"
+                        else filepath.stat().st_size
+                    )
                 except FileNotFoundError:
                     self.info.file_size = 0
 
+                mime = mimetypes.guess_type(filepath.name)[0] or ""
+                if mime.startswith("image/"):
+                    self.info.extras.update({"is_image": True, "is_video": False, "is_audio": False})
+                    return
+                if self.info.engine == "gallerydl" and not mime.startswith(("video/", "audio/")):
+                    self.info.extras.update({"is_image": False, "is_video": False, "is_audio": False})
+                    return
                 try:
                     from app.features.streaming.library.ffprobe import ffprobe, ffprobe_bin
 
@@ -241,6 +254,27 @@ class StatusTracker:
                     }
                 },
             )
+
+        if status.get("action") in {"file", "files"}:
+            incoming = status.get("files", []) if status["action"] == "files" else [status["file"]]
+            existing = {file["filename"]: file for file in self.info.files}
+            existing.update({file["filename"]: file for file in incoming})
+            base = Path(self.download_dir).resolve()
+            self.info.files = [
+                file
+                for file in existing.values()
+                if (base / file["filename"]).resolve().is_relative_to(base) and (base / file["filename"]).is_file()
+            ]
+            self.info.gallery_count = len(self.info.files)
+            self.info.is_gallery = True
+            self.info.file_size = sum(file.get("size", 0) for file in self.info.files)
+            if self.info.files:
+                self.info.filename = self.info.files[0]["filename"]
+            if status["action"] == "files":
+                self._notify.emit(Events.ITEM_UPDATED, data=self.info)
+            else:
+                self._emit_progress()
+            return
 
         if isinstance(status, str):
             self._notify.emit(Events.ITEM_UPDATED, data=self.info)

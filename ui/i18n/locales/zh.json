@@ -1314,5 +1314,21 @@
   "player": {
     "subtitleLoadFailed": "加载此视频的字幕失败。",
     "subtitleRenderFailed": "在浏览器中渲染 ASS 字幕失败。"
+  },
+  "gallery": {
+    "engine": "Download engine",
+    "engineHelp": "Auto selects an engine for each URL.",
+    "auto": "Auto",
+    "options": "Gallery-dl options",
+    "optionsHelp": "Gallery-dl CLI flags or a JSON configuration object.",
+    "documentation": "Gallery-dl configuration reference",
+    "templateHelp": "Gallery-dl filenames use {field} templates. Leave blank to keep native filenames and source folders.",
+    "nativeTemplate": "Native gallery-dl filename",
+    "fileCount": "{count} files",
+    "back": "Back to gallery",
+    "more": "Load more",
+    "information": "Gallery information",
+    "consoleHelp": "Gallery-dl runs through the download queue. Use Add download to run this source.",
+    "view": "View gallery"
   }
 }

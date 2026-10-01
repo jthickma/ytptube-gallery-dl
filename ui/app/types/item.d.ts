@@ -1,6 +1,16 @@
+export type DownloadEngine = 'auto' | 'ytdlp' | 'gallerydl';
+export type GalleryFile = {
+  filename: string;
+  size: number;
+  mime: string;
+  metadata?: Record<string, unknown>;
+};
+
 export type item_request = {
   id?: string | null;
   url: string;
+  engine?: DownloadEngine;
+  gallerydl?: string;
   preset?: string;
   folder?: string;
   template?: string;

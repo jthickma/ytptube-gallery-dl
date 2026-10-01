@@ -403,6 +403,18 @@ class Config(metaclass=Singleton):
     yt_new_version: str = ""
     "The new yt-dlp version available."
 
+    gallerydl_enabled: bool = True
+    gallerydl_auto: bool = True
+    gallerydl_sites: str = ""
+    gallerydl_exclude_sites: str = ""
+    # Empty preserves the extractor's native filename format.
+    gallerydl_filename: str = ""
+    gallerydl_archive: str = ""
+    gallerydl_max_items: int = 0
+    gallerydl_config: str = ""
+    gallerydl_tmp_use: bool = False
+    gallerydl_new_version: str = ""
+
     monitor_enabled: bool = False
     "Enable app resource monitoring."
 
@@ -435,6 +447,7 @@ class Config(metaclass=Singleton):
     "The variables that are immutable."
 
     _int_vars: tuple = (
+        "gallerydl_max_items",
         "port",
         "max_workers",
         "max_workers_per_extractor",
@@ -457,6 +470,9 @@ class Config(metaclass=Singleton):
     "The variables that are integers."
 
     _boolean_vars: tuple = (
+        "gallerydl_enabled",
+        "gallerydl_auto",
+        "gallerydl_tmp_use",
         "keep_archive",
         "ytdlp_debug",
         "debug",
@@ -488,6 +504,10 @@ class Config(metaclass=Singleton):
     "The variables that are floats."
 
     _frontend_vars: tuple = (
+        "gallerydl_enabled",
+        "gallerydl_auto",
+        "gallerydl_filename",
+        "gallerydl_new_version",
         "download_path",
         "keep_archive",
         "log_level",

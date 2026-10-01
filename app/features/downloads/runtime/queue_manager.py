@@ -177,6 +177,8 @@ class DownloadQueue(metaclass=Singleton):
                 return await self.add(
                     Item(
                         url=item.info.url,
+                        engine=item.info.engine,
+                        gallerydl=item.info.gallerydl,
                         preset=item.info.preset,
                         folder=item.info.folder,
                         cookies=item.info.cookies or "",
@@ -515,7 +517,11 @@ class DownloadQueue(metaclass=Singleton):
                 },
             )
 
-            if remove_file and "finished" == item.info.status and item.info.filename:
+            if remove_file and item.info.engine == "gallerydl" and item.info.files:
+                from app.features.gallerydl.utils import remove_files
+
+                removed_files += remove_files(item.info, self.config.download_path)
+            elif remove_file and "finished" == item.info.status and item.info.filename:
                 filename = str(item.info.filename)
                 if item.info.folder:
                     filename = f"{item.info.folder}/{item.info.filename}"
@@ -658,7 +664,11 @@ class DownloadQueue(metaclass=Singleton):
                 },
             )
 
-            if remove_file and "finished" == item.info.status and item.info.filename:
+            if remove_file and item.info.engine == "gallerydl" and item.info.files:
+                from app.features.gallerydl.utils import remove_files
+
+                removed_files += remove_files(item.info, self.config.download_path)
+            elif remove_file and "finished" == item.info.status and item.info.filename:
                 filename = str(item.info.filename)
                 if item.info.folder:
                     filename = f"{item.info.folder}/{item.info.filename}"

@@ -85,7 +85,7 @@ class TaskHandle:
                 s["d"].append(task.name)
                 continue
 
-            if not task.get_ytdlp_opts().get_all().get("download_archive"):
+            if not task.get_archive_file():
                 LOG.debug(
                     "Task '%s' does not have an archive file configured.",
                     task.name,
@@ -233,6 +233,10 @@ class TaskHandle:
             )
 
     async def _find_handler(self, task: HandleTask) -> type[BaseHandler] | None:
+        from .handlers.gallerydl import GalleryDLTaskHandler
+
+        if await GalleryDLTaskHandler.can_handle(task):
+            return GalleryDLTaskHandler
         for cls in self._handlers:
             try:
                 if await Services.get_instance().handle_async(handler=cls.can_handle, task=task):
@@ -328,6 +332,32 @@ class TaskHandle:
             return TaskFailure(
                 message="Handler returned invalid result type.", metadata={"type": type(extraction).__name__}
             )
+
+        if extraction.metadata.get("engine") == "gallerydl":
+            download_queue = services.get("queue") or DownloadQueue.get_instance()
+            status = await download_queue.add(
+                Item.format(
+                    {
+                        "url": task.url,
+                        "engine": "gallerydl",
+                        "gallerydl": task.gallerydl,
+                        "preset": task.preset or self._config.default_preset,
+                        "folder": task.folder,
+                        "template": task.template,
+                        "cli": task.cli,
+                        "auto_start": task.auto_start,
+                        "extras": {
+                            "source_name": task.name,
+                            "source_id": task.id,
+                            "source_handler": handler.__name__,
+                            "ignore_conditions": task.ignore_conditions,
+                        },
+                    }
+                )
+            )
+            if status.get("status") == "error" and not status.get("hidden"):
+                return TaskFailure(message=status.get("msg", "Failed to queue gallery source."))
+            return extraction
 
         raw_items: list[TaskItem] = extraction.items or []
         metadata: dict[str, Any] = extraction.metadata or {}
@@ -436,6 +466,8 @@ class TaskHandle:
         base_item = Item.format(
             {
                 "url": task.url,
+                "engine": task.engine,
+                "gallerydl": task.gallerydl,
                 "preset": task.preset or self._config.default_preset,
                 "folder": task.folder or "",
                 "template": task.template or "",
@@ -649,7 +681,7 @@ class TaskHandle:
     def _finish_inspection(task: HandleTask, extraction: TaskResult, base_metadata: dict[str, Any]) -> TaskResult:
         combined_metadata: dict[str, Any] = {**base_metadata, **(extraction.metadata or {})}
         items = list(extraction.items)
-        archive_file = task.get_ytdlp_opts().get_all().get("download_archive")
+        archive_file = task.get_archive_file()
         archive_ids = [item.archive_id for item in items if item.archive_id]
         archived = set(archive_read(archive_file, archive_ids)) if archive_file and archive_ids else set()
         for item in items:

@@ -3,6 +3,7 @@
     <FormSubmitError :message="submitError" @dismiss="submitError = ''" />
     <form autocomplete="off" class="space-y-4" @submit.prevent="addDownload">
       <div class="ytp-card p-4 sm:p-6 space-y-4">
+        <DownloadEngineFields v-model:engine="form.engine" v-model:gallerydl="form.gallerydl" />
         <div class="space-y-4">
           <UFormField class="w-full" :ui="downloadFieldUi">
             <template #label>
@@ -255,7 +256,7 @@
               />
             </div>
 
-            <div class="xl:col-span-2">
+            <div v-if="!galleryMode" class="xl:col-span-2">
               <DLInput
                 id="no_cache"
                 v-model="dlFields['--no-continue']"
@@ -282,7 +283,9 @@
                 icon="i-lucide-file-code-2"
                 :disabled="addInProgress"
                 :placeholder="
-                  getDefault('template', config.app.output_template || '%(title)s.%(ext)s')
+                  galleryMode
+                    ? t('gallery.nativeTemplate')
+                    : getDefault('template', config.app.output_template || '%(title)s.%(ext)s')
                 "
               >
                 <template #description>
@@ -429,7 +432,10 @@
             </UFormField>
           </div>
 
-          <div v-if="config.dl_fields.length > 0" class="grid gap-4 md:grid-cols-2 xl:grid-cols-2">
+          <div
+            v-if="!galleryMode && config.dl_fields.length > 0"
+            class="grid gap-4 md:grid-cols-2 xl:grid-cols-2"
+          >
             <DLInput
               v-for="(fi, index) in sortedDLFields"
               :id="fi?.id || `dlf-${index}`"
@@ -465,9 +471,9 @@
               variant="outline"
               icon="i-lucide-info"
               :disabled="addInProgress || !hasSingleUrl"
-              @click="emitter('getInfo', splitUrls(form.url || '')[0] || '', form.preset, form.cli)"
+              @click="getEngineInfo"
             >
-              {{ t('common.ytdlpInformation') }}
+              {{ galleryMode ? t('gallery.information') : t('common.ytdlpInformation') }}
             </UButton>
 
             <UButton
@@ -521,9 +527,7 @@
         <span class="sr-only">{{ t('common.browseYtdlpFlags') }}</span>
       </template>
 
-      <template #body>
-        <YTDLPOptions />
-      </template>
+      <template #body> <GalleryDLOptions v-if="galleryMode" /><YTDLPOptions v-else /> </template>
     </UModal>
 
     <UModal
@@ -584,7 +588,8 @@
 </template>
 
 <script setup lang="ts">
-import { useStorage } from '@vueuse/core';
+import { useStorage, watchDebounced } from '@vueuse/core';
+import { convertGalleryOptions, detectDownloadEngine } from '~/utils/download-engine';
 import TextareaAutocomplete from '~/components/TextareaAutocomplete.vue';
 import TextDropzone from '~/components/TextDropzone.vue';
 import PlaylistPicker from '~/components/PlaylistPicker.vue';
@@ -791,6 +796,8 @@ const advancedEditorFieldUi = {
 };
 
 const form = useStorage<item_request>('local_config_v1', {
+  engine: 'auto',
+  gallerydl: '',
   id: null,
   url: '',
   preset: config.app.default_preset,
@@ -801,6 +808,34 @@ const form = useStorage<item_request>('local_config_v1', {
   extras: {},
 }) as Ref<item_request>;
 
+const detectedEngine = ref<import('~/types/item').DownloadEngine>('auto');
+const galleryMode = computed(
+  () =>
+    form.value.engine === 'gallerydl' ||
+    (form.value.engine !== 'ytdlp' &&
+      (findPreset(form.value.preset || '')?.engine === 'gallerydl' ||
+        detectedEngine.value === 'gallerydl')),
+);
+watchDebounced(
+  () => [form.value.url, form.value.engine, form.value.preset],
+  async () => {
+    detectedEngine.value = 'auto';
+    const source = { ...form.value, url: splitUrls(form.value.url || '')[0] || '' };
+    if (!source.url || !config.app.gallerydl_enabled) return;
+    try {
+      const engine = await detectDownloadEngine(source);
+      if (
+        source.url === (splitUrls(form.value.url || '')[0] || '') &&
+        source.engine === form.value.engine &&
+        source.preset === form.value.preset
+      )
+        detectedEngine.value = engine;
+    } catch {
+      /* Submission reports detection errors. */
+    }
+  },
+  { debounce: 300 },
+);
 const presetItems = computed(() => selectItems.value);
 const ignoreConditionOptions = computed(() =>
   buildIgnoreConditionOptions(
@@ -821,16 +856,10 @@ const mobileActionGroups = computed(() => {
         onSelect: () => navigateTo('/dl_fields'),
       },
       {
-        label: t('common.ytdlpInformation'),
+        label: galleryMode.value ? t('gallery.information') : t('common.ytdlpInformation'),
         icon: 'i-lucide-info',
         disabled: addInProgress.value || !hasSingleUrl.value,
-        onSelect: () =>
-          emitter(
-            'getInfo',
-            splitUrls(form.value.url || '')[0] || '',
-            form.value.preset,
-            form.value.cli,
-          ),
+        onSelect: () => void getEngineInfo(),
       },
     ],
   ] as Array<Array<Record<string, unknown>>>;
@@ -968,7 +997,7 @@ const addDownload = async () => {
 
   let form_cli = (form.value?.cli || '').trim();
 
-  if (dlFields.value && Object.keys(dlFields.value).length > 0) {
+  if (!galleryMode.value && dlFields.value && Object.keys(dlFields.value).length > 0) {
     const joined = [];
     for (const [key, value] of Object.entries(dlFields.value)) {
       if (false === is_valid_dl_field(key)) {
@@ -992,23 +1021,26 @@ const addDownload = async () => {
     }
   }
 
-  if (form_cli && form_cli.trim()) {
-    const options = await convertOptions(form_cli);
-    if (null === options) {
-      return;
-    }
-  }
-
   const request_data = [] as Array<item_request>;
 
-  splitUrls(form.value.url).forEach((url: string, index: number) => {
+  const sources = splitUrls(form.value.url);
+  let engines: import('~/types/item').DownloadEngine[];
+  try {
+    engines = await Promise.all(sources.map((url) => detectDownloadEngine({ ...form.value, url })));
+  } catch (error) {
+    submitError.value = String(error);
+    return;
+  }
+  sources.forEach((url: string, index: number) => {
     const data = {
       url: url,
+      engine: engines[index] || 'auto',
+      gallerydl: form.value.gallerydl || '',
       preset: form.value.preset || config.app.default_preset,
       folder: form.value.folder,
       template: form.value.template,
       cookies: form.value.cookies,
-      cli: form_cli,
+      cli: engines[index] === 'gallerydl' ? (form.value.cli || '').trim() : form_cli,
       auto_start: auto_start.value,
     } as item_request;
 
@@ -1087,6 +1119,8 @@ const resetConfig = async () => {
   }
 
   form.value = {
+    engine: 'auto',
+    gallerydl: '',
     url: '',
     preset: config.app.default_preset,
     cookies: '',
@@ -1103,6 +1137,11 @@ const resetConfig = async () => {
 
 const convertOptions = async (args: string) => {
   try {
+    const selected = await detectDownloadEngine({
+      ...form.value,
+      url: splitUrls(form.value.url)[0] || '',
+    });
+    if (selected === 'gallerydl') return await convertGalleryOptions(args);
     const response = await convertCliOptions(args);
 
     if (response.output_template) {
@@ -1200,6 +1239,20 @@ onMounted(async () => {
 
 const runCliCommand = async (): Promise<void> => {
   submitError.value = '';
+  try {
+    if (
+      (await detectDownloadEngine({
+        ...form.value,
+        url: splitUrls(form.value.url || '')[0] || '',
+      })) === 'gallerydl'
+    ) {
+      submitError.value = t('gallery.consoleHelp');
+      return;
+    }
+  } catch (error) {
+    submitError.value = String(error);
+    return;
+  }
   if (!form.value.url) {
     toast.warning(t('common.enterUrlFirst'));
     return;
@@ -1221,7 +1274,7 @@ const runCliCommand = async (): Promise<void> => {
 
   let form_cli = (form.value?.cli || '').trim();
 
-  if (dlFields.value && Object.keys(dlFields.value).length > 0) {
+  if (!galleryMode.value && dlFields.value && Object.keys(dlFields.value).length > 0) {
     const joined = [];
     for (const [key, value] of Object.entries(dlFields.value)) {
       if (false === is_valid_dl_field(key)) {
@@ -1283,6 +1336,27 @@ const runCliCommand = async (): Promise<void> => {
 
 const testDownloadOptions = async (): Promise<void> => {
   submitError.value = '';
+  try {
+    if (
+      (await detectDownloadEngine({
+        ...form.value,
+        url: splitUrls(form.value.url || '')[0] || '',
+      })) === 'gallerydl'
+    ) {
+      const response = await request('/api/gallery-dl/options/', {
+        method: 'POST',
+        body: JSON.stringify({ ...form.value, url: splitUrls(form.value.url)[0] }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(await parse_api_error(data));
+      testResultsData.value = data;
+      showTestResults.value = true;
+      return;
+    }
+  } catch (error) {
+    submitError.value = String(error);
+    return;
+  }
   if (!form.value.url) {
     toast.warning(t('common.enterUrlFirst'));
     return;
@@ -1295,7 +1369,7 @@ const testDownloadOptions = async (): Promise<void> => {
 
   let form_cli = (form.value?.cli || '').trim();
 
-  if (dlFields.value && Object.keys(dlFields.value).length > 0) {
+  if (!galleryMode.value && dlFields.value && Object.keys(dlFields.value).length > 0) {
     const joined = [];
     for (const [key, value] of Object.entries(dlFields.value)) {
       if (false === is_valid_dl_field(key)) {
@@ -1393,6 +1467,30 @@ const sortedDLFields = computed(() =>
 const hasValidUrl = computed(() => form.value.url && form.value.url.trim().length > 0);
 const hasSingleUrl = computed(() => splitUrls(form.value.url || '').length === 1);
 
+const getEngineInfo = async () => {
+  try {
+    const engine = await detectDownloadEngine({
+      ...form.value,
+      url: splitUrls(form.value.url)[0] || '',
+    });
+    if (engine !== 'gallerydl') {
+      emitter('getInfo', splitUrls(form.value.url)[0] || '', form.value.preset, form.value.cli);
+      return;
+    }
+    showTestResults.value = true;
+    testResultsData.value = null;
+    const response = await request('/api/gallery-dl/url/info/', {
+      method: 'POST',
+      body: JSON.stringify({ ...form.value, url: splitUrls(form.value.url)[0], limit: 200 }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(await parse_api_error(data));
+    testResultsData.value = data;
+  } catch (error) {
+    testResultsData.value = { error: String(error) };
+  }
+};
+
 const scheduleDownload = async (): Promise<void> => {
   if (addInProgress.value || scheduleInProgress.value || !hasSingleUrl.value) {
     return;
@@ -1406,25 +1504,29 @@ const scheduleDownload = async (): Promise<void> => {
   scheduleInProgress.value = true;
   let metadata: TaskScheduleMetadata = {};
   try {
-    const params = new URLSearchParams({
-      url,
-      preset: form.value.preset || config.app.default_preset,
-      args: '-I0',
-    });
-    const response = await request(`/api/yt-dlp/url/info?${params.toString()}`);
-    if (!response.ok) {
-      throw new Error('Metadata request failed');
-    }
-    metadata = (await response.json()) as typeof metadata;
-    if (!tasksComposable.isTaskSource(metadata)) {
-      await dialog.alertDialog({
-        message: t('tasks.schedulePlaylistOnly'),
-        confirmText: t('common.ok'),
-        confirmColor: 'warning',
+    const engine = await detectDownloadEngine({ ...form.value, url });
+    if (engine === 'gallerydl') {
+      metadata = { _type: 'playlist', title: url };
+    } else {
+      const params = new URLSearchParams({
+        url,
+        preset: form.value.preset || config.app.default_preset,
+        args: '-I0',
       });
-      return;
+      const response = await request(`/api/yt-dlp/url/info?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error('Metadata request failed');
+      }
+      metadata = (await response.json()) as typeof metadata;
+      if (!tasksComposable.isTaskSource(metadata)) {
+        await dialog.alertDialog({
+          message: t('tasks.schedulePlaylistOnly'),
+          confirmText: t('common.ok'),
+          confirmColor: 'warning',
+        });
+        return;
+      }
     }
-
     const hasTitle = [metadata.title, metadata.fulltitle].some(
       (value) => typeof value === 'string' && value.trim(),
     );
@@ -1441,6 +1543,8 @@ const scheduleDownload = async (): Promise<void> => {
   taskFormHandoff.set(
     tasksComposable.createTaskDraft(metadata, {
       url,
+      engine: form.value.engine || 'auto',
+      gallerydl: form.value.gallerydl || '',
       preset: form.value.preset || config.app.default_preset,
       folder: form.value.folder || '',
       template: form.value.template || '',

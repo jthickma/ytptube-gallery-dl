@@ -23,6 +23,8 @@ class TaskModel(Base):
     preset: Mapped[str] = mapped_column(String(255), nullable=False, default="")
     timer: Mapped[str] = mapped_column(String(255), nullable=False, default="")
     template: Mapped[str] = mapped_column(String(1024), nullable=False, default="")
+    engine: Mapped[str] = mapped_column(String(16), nullable=False, default="auto")
+    gallerydl: Mapped[str] = mapped_column(Text, nullable=False, default="")
     cli: Mapped[str] = mapped_column(Text, nullable=False, default="")
     ignore_conditions: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
     auto_start: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)

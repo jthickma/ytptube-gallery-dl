@@ -47,6 +47,8 @@ def _payload_data(payload: PresetModel | dict[str, Any]) -> dict[str, Any]:
         "template": payload.template,
         "cookies": payload.cookies,
         "cli": payload.cli,
+        "engine": payload.engine,
+        "gallerydl": payload.gallerydl,
         "default": payload.default,
         "priority": payload.priority,
         "created_at": payload.created_at,

@@ -15,6 +15,9 @@ YTPTube's automation tools can be used separately or together:
 - **Presets** store reusable yt-dlp options, output templates, paths, cookies, and post-processing settings.
 - **Conditions** optionally inspect metadata returned by yt-dlp and apply matching options.
 
+This fork also supports image collections and videos through [gallery-dl](docs/gallery-dl.md),
+with automatic engine selection, recurring sources, and a gallery viewer in History.
+
 See [Features](docs/features.md) for the full workflow.
 
 ## Screenshots

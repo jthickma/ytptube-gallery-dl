@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from datetime import datetime  # noqa: TC003
-from typing import Any
+from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
 from app.features.core.schemas import Pagination
 
@@ -18,6 +18,8 @@ class Task(BaseModel):
     preset: str = ""
     timer: str = ""
     template: str = ""
+    engine: Literal["auto", "ytdlp", "gallerydl"] = "auto"
+    gallerydl: str = ""
     cli: str = ""
     ignore_conditions: list[str] = Field(default_factory=list)
     auto_start: bool = True
@@ -85,9 +87,17 @@ class Task(BaseModel):
 
         return value
 
+    @field_validator("gallerydl")
+    @classmethod
+    def _validate_gallerydl(cls, value: str) -> str:
+        from app.features.gallerydl.opts import gallerydl_arg_converter
+
+        gallerydl_arg_converter(value)
+        return value
+
     @field_validator("cli", mode="before")
     @classmethod
-    def _validate_cli(cls, value: Any) -> str:
+    def _validate_cli(cls, value: Any, info: ValidationInfo) -> str:
         if not value:
             return ""
 
@@ -102,9 +112,14 @@ class Task(BaseModel):
         try:
             from app.features.ytdlp.utils import arg_converter
 
-            arg_converter(args=value)
+            if info.data.get("engine") == "gallerydl":
+                from app.features.gallerydl.opts import gallerydl_arg_converter
+
+                gallerydl_arg_converter(value)
+            else:
+                arg_converter(args=value)
         except Exception as e:
-            msg = f"Invalid command options for yt-dlp: {e!s}"
+            msg = f"Invalid command options: {e!s}"
             raise ValueError(msg) from e
 
         return value
@@ -137,6 +152,8 @@ class TaskPatch(BaseModel):
     preset: str | None = None
     timer: str | None = None
     template: str | None = None
+    engine: Literal["auto", "ytdlp", "gallerydl"] | None = None
+    gallerydl: str | None = None
     cli: str | None = None
     ignore_conditions: list[str] | None = None
     auto_start: bool | None = None

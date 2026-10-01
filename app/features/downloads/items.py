@@ -25,6 +25,8 @@ LOG = get_logger()
 @dataclass(kw_only=True)
 class Item:
     url: str
+    engine: str = "auto"
+    gallerydl: str = ""
     preset: str = field(default_factory=lambda: Item._default_preset())
     folder: str = ""
     cookies: str = ""
@@ -81,7 +83,22 @@ class Item:
         if len(url) >= 11 and re.fullmatch(r"[A-Za-z0-9_-]{11}", url):
             url = f"https://www.youtube.com/watch?v={url}"
 
-        data: dict[str, Any] = {"url": url}
+        from app.features.gallerydl.detect import ENGINES
+
+        engine = item.get("engine", "auto")
+        if engine not in ENGINES:
+            msg_0 = "Engine must be auto, ytdlp, or gallerydl."
+            raise ValueError(msg_0)
+        data: dict[str, Any] = {"url": url, "engine": engine}
+        gallerydl = item.get("gallerydl", "")
+        if not isinstance(gallerydl, str):
+            msg_0 = "gallerydl options must be a string (CLI or JSON object)."
+            raise ValueError(msg_0)
+        if gallerydl:
+            from app.features.gallerydl.opts import gallerydl_arg_converter
+
+            gallerydl_arg_converter(gallerydl)
+            data["gallerydl"] = gallerydl
 
         preset: str | None = item.get("preset")
         if preset and isinstance(preset, str) and preset != Item._default_preset():
@@ -122,12 +139,21 @@ class Item:
         cli: str | None = item.get("cli")
         if cli and len(cli) > 2:
             try:
+                from app.features.gallerydl.detect import resolve_engine
+                from app.features.gallerydl.opts import gallerydl_arg_converter
+                from app.features.presets.service import Presets
                 from app.features.ytdlp.utils import arg_converter
 
-                arg_converter(args=cli, level=True)
+                if (
+                    resolve_engine(url, engine, Presets.get_instance().get(data.get("preset", Item._default_preset())))
+                    == "gallerydl"
+                ):
+                    gallerydl_arg_converter(cli)
+                else:
+                    arg_converter(args=cli, level=True)
                 data["cli"] = cli
             except Exception as e:
-                msg = f"Failed to parse command options for yt-dlp. {e!s}"
+                msg = f"Failed to parse command options. {e!s}"
                 raise ValueError(msg) from e
 
         return Item(**data)
@@ -195,6 +221,12 @@ class ItemDTO:
 
     _id: str = field(default_factory=lambda: str(uuid.uuid4()), init=False)
     """ Unique identifier for the item. """
+    engine: str = "ytdlp"
+    gallerydl: str = ""
+    gallery_metadata: dict = field(default_factory=dict)
+    files: list[dict] = field(default_factory=list)
+    is_gallery: bool = False
+    gallery_count: int | None = None
     error: str | None = None
     """ Error message if the item failed. """
     id: str
@@ -378,6 +410,11 @@ class ItemDTO:
         if not self.url:
             return None
 
+        if self.engine == "gallerydl":
+            from app.features.gallerydl.utils import gallerydl_archive_id
+
+            self.archive_id = gallerydl_archive_id(self.url, self.gallery_metadata)
+            return self.archive_id
         idDict: dict = get_archive_id(self.url)
         self.archive_id = idDict.get("archive_id")
 
@@ -391,6 +428,8 @@ class ItemDTO:
             str | None: The extractor key if available, None otherwise.
 
         """
+        if self.engine == "gallerydl":
+            return "gallerydl_" + str(self.gallery_metadata.get("category", "generic"))
         if self.archive_id:
             return self.archive_id.split(" ")[0]
 
@@ -455,7 +494,12 @@ class ItemDTO:
         if self._archive_file or self._recomputed or not self.archive_id:
             return self._archive_file
 
-        self._archive_file = self.get_ytdlp_opts().get_all().get("download_archive")
+        if self.engine == "gallerydl":
+            from app.features.gallerydl.utils import history_archive
+
+            self._archive_file = history_archive()
+        else:
+            self._archive_file = self.get_ytdlp_opts().get_all().get("download_archive")
         if self._archive_file:
             self._archive_file = self._archive_file.strip()
 

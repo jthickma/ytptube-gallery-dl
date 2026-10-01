@@ -96,6 +96,36 @@ class Download:
         self._hook_handlers: HookHandlers | None = None
 
     def _download(self) -> None:
+        if self.info.engine == "gallerydl":
+            self._download_gallerydl()
+        else:
+            self._download_ytdlp()
+
+    def _download_gallerydl(self) -> None:
+        from app.features.gallerydl.runner import GalleryDLRunner
+
+        cookie_file = None
+        try:
+            params = self.info.options.copy()
+            if self.info.cookies:
+                cookie_file = Path(Config.get_instance().temp_path) / f"gallery_cookie_{self.id}.txt"
+                params["cookies"] = str(create_cookies_file(self.info.cookies, cookie_file))
+            if Config.get_instance().gallerydl_tmp_use and self._temp_manager.temp_path:
+                params["part-directory"] = str(self._temp_manager.temp_path)
+            runner = GalleryDLRunner(
+                self.info, params, self.status_queue, self.logger, self._process_manager.cancel_event
+            )
+            runner.install_cancel_handler()
+            runner.run()
+        except Exception as exc:
+            self.logger.exception("Gallery-dl download failed for '%s'.", self.info.url)
+            self.status_queue.put({"id": self.id, "status": "error", "error": str(exc)})
+        finally:
+            if cookie_file:
+                cookie_file.unlink(missing_ok=True)
+            self.status_queue.put(Terminator())
+
+    def _download_ytdlp(self) -> None:
         """Run yt-dlp across the subprocess boundary."""
         cookie_file: Path | None = None
         params: dict[str, Any] = {}

@@ -129,6 +129,9 @@ class UpdateChecker(metaclass=Singleton):
         app_cached = await self._cache.aget(self.CACHE_KEY)
         ytdlp_cached = await self._cache.aget(self.YTDLP_CACHE_KEY)
 
+        if self._config.gallerydl_enabled:
+            await self._check_gallerydl_version()
+
         if app_cached and ytdlp_cached:
             return (app_cached, ytdlp_cached)
 
@@ -252,6 +255,22 @@ class UpdateChecker(metaclass=Singleton):
             self._config.yt_new_version = ""
 
         return (status, new_version)
+
+    async def _check_gallerydl_version(self) -> tuple[str, str | None]:
+        from gallery_dl import __version__
+
+        key = "update_checker:gallerydl"
+        cached = await self._cache.aget(key)
+        result = cached or await self._check_github_version(
+            name="gallery-dl",
+            api_url="https://api.github.com/repos/mikf/gallery-dl/releases/latest",
+            current_version=__version__,
+            cache_key=key,
+            strip_v_prefix=True,
+        )
+        if result[0] in {"update_available", "up_to_date"}:
+            self._config.gallerydl_new_version = (result[1] or "") if result[0] == "update_available" else ""
+        return result
 
     def _compare_versions(self, current: str, latest: str) -> bool:
         """

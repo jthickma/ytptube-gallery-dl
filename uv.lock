@@ -684,6 +684,23 @@ wheels = [
 ]
 
 [[package]]
+name = "gallery-dl"
+version = "1.32.14"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e6/a7/81d656eee98122bbae8234a3e85b6923b19c6c5b7c43d3a907625806003a/gallery_dl-1.32.14.tar.gz", hash = "sha256:70657865488e09c2d7bcabc1faf9b5f8c5a8b550ee123a87ca5c7740f70ed382", size = 755950, upload-time = "2026-09-27T10:01:08.286Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/48/85/44e7fbc106921e6f55ce7ca7bd53048fe6cf5a5fea6912394dffd931c8d3/gallery_dl-1.32.14-py3-none-any.whl", hash = "sha256:c1be6e1397a9eaf53252eceb0fc3701631fa1f29a34c155cb374f71e5345b943", size = 937876, upload-time = "2026-09-27T10:01:04.098Z" },
+]
+
+[package.optional-dependencies]
+video = [
+    { name = "yt-dlp" },
+]
+
+[[package]]
 name = "greenlet"
 version = "3.5.6"
 source = { registry = "https://pypi.org/simple" }
@@ -2383,6 +2400,7 @@ dependencies = [
     { name = "dateparser" },
     { name = "debugpy" },
     { name = "defusedxml" },
+    { name = "gallery-dl", extra = ["video"] },
     { name = "httpx", extra = ["brotli", "http2", "socks", "zstd"] },
     { name = "httpx-curl-cffi" },
     { name = "jmespath" },
@@ -2441,6 +2459,7 @@ requires-dist = [
     { name = "dateparser", specifier = ">=1.2.1" },
     { name = "debugpy", specifier = ">=1.8.1" },
     { name = "defusedxml", specifier = ">=0.7.1" },
+    { name = "gallery-dl", extras = ["video"], specifier = ">=1.32.14,<2" },
     { name = "httpx", extras = ["brotli", "http2", "socks", "zstd"] },
     { name = "httpx-curl-cffi", specifier = ">=0.1.4" },
     { name = "jmespath", specifier = ">=1.0.1" },

@@ -3,6 +3,10 @@ import type { YTDLPOption } from './ytdlp';
 import type { DLField } from './dl_fields';
 
 type AppConfig = {
+  gallerydl_enabled?: boolean;
+  gallerydl_auto?: boolean;
+  gallerydl_filename?: string;
+  gallerydl_new_version?: string;
   download_path: string;
   remove_files: boolean;
   output_template: string;

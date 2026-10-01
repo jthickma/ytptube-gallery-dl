@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, ValidationInfo, field_validator
 
 from app.features.core.schemas import Pagination
 from app.features.core.utils import parse_int
@@ -21,6 +21,8 @@ class Preset(BaseModel):
     folder: str = ""
     template: str = ""
     cookies: str = ""
+    engine: Literal["auto", "ytdlp", "gallerydl"] = "auto"
+    gallerydl: str = ""
     cli: str = ""
     default: bool = False
     priority: int = 0
@@ -44,9 +46,17 @@ class Preset(BaseModel):
     def _normalize_priority(cls, value: Any) -> int:
         return parse_int(value, field="Priority", minimum=0)
 
+    @field_validator("gallerydl")
+    @classmethod
+    def _validate_gallerydl(cls, value: str) -> str:
+        from app.features.gallerydl.opts import gallerydl_arg_converter
+
+        gallerydl_arg_converter(value)
+        return value
+
     @field_validator("cli", mode="before")
     @classmethod
-    def _validate_cli(cls, value: Any) -> str:
+    def _validate_cli(cls, value: Any, info: ValidationInfo) -> str:
         if not value:
             return ""
         if not isinstance(value, str):
@@ -60,9 +70,14 @@ class Preset(BaseModel):
         try:
             from app.features.ytdlp.utils import arg_converter
 
-            arg_converter(args=value, level=True)
+            if info.data.get("engine") == "gallerydl":
+                from app.features.gallerydl.opts import gallerydl_arg_converter
+
+                gallerydl_arg_converter(value)
+            else:
+                arg_converter(args=value, level=True)
         except Exception as e:
-            msg = f"Invalid command options for yt-dlp: {e!s}"
+            msg = f"Invalid command options: {e!s}"
             raise ValueError(msg) from e
         return value
 
@@ -86,6 +101,8 @@ class PresetPatch(Preset):
     folder: str | None = None
     template: str | None = None
     cookies: str | None = None
+    engine: Literal["auto", "ytdlp", "gallerydl"] | None = None
+    gallerydl: str | None = None
     cli: str | None = None
     priority: int | None = None
 

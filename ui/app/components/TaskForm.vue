@@ -1,6 +1,7 @@
 <template>
   <form id="taskForm" autocomplete="off" class="space-y-4" @submit.prevent="checkInfo">
     <FormSubmitError :message="action.message.value" @dismiss="action.clear" />
+    <DownloadEngineFields v-model:engine="form.engine" v-model:gallerydl="form.gallerydl" />
     <UAlert
       v-if="displayError && hasFormContent"
       color="warning"
@@ -504,7 +505,7 @@
       </template>
 
       <template #body>
-        <YTDLPOptions />
+        <GalleryDLOptions v-if="form.engine === 'gallerydl'" /><YTDLPOptions v-else />
       </template>
     </UModal>
   </form>
@@ -513,6 +514,7 @@
 <script lang="ts" setup>
 import { useStorage } from '@vueuse/core';
 import { CronExpressionParser } from 'cron-parser';
+import { convertGalleryOptions, detectDownloadEngine } from '~/utils/download-engine';
 import TextareaAutocomplete from '~/components/TextareaAutocomplete.vue';
 import type { AutoCompleteOptions } from '~/types/autocomplete';
 import type { Condition } from '~/types/conditions';
@@ -563,6 +565,8 @@ const createDefaultTask = (source?: Partial<Task>): TaskFormData => ({
   preset: '',
   timer: '',
   template: '',
+  engine: 'auto',
+  gallerydl: '',
   cli: '',
   auto_start: true,
   handler_enabled: true,
@@ -883,6 +887,8 @@ const checkInfo = async (): Promise<void> => {
         timer: form.timer,
         template: form.template,
         cli: form.cli,
+        engine: form.engine,
+        gallerydl: form.gallerydl,
         ignore_conditions: [...form.ignore_conditions],
         auto_start: form.auto_start,
         handler_enabled: form.handler_enabled,
@@ -955,6 +961,8 @@ const importItem = async (): Promise<void> => {
     form.template = item.template ?? form.template;
     form.timer = item.timer ?? form.timer;
     form.folder = item.folder ?? form.folder;
+    form.engine = item.engine || 'auto';
+    form.gallerydl = item.gallerydl || '';
     form.cli = item.cli ?? form.cli;
     form.ignore_conditions = normalizeIgnoreConditions(item.ignore_conditions);
     form.auto_start = item.auto_start ?? true;
@@ -990,6 +998,11 @@ const importItem = async (): Promise<void> => {
 
 const convertOptions = async (args: string): Promise<Record<string, any> | null> => {
   try {
+    if (
+      (await detectDownloadEngine({ ...form, url: splitUrls(form.url || '')[0] || '' })) ===
+      'gallerydl'
+    )
+      return await convertGalleryOptions(args);
     const response = await convertCliOptions(args);
 
     if (response.output_template) {

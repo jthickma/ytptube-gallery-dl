@@ -20,6 +20,8 @@ class PresetModel(Base):
     folder: Mapped[str] = mapped_column(Text, nullable=False, default="")
     template: Mapped[str] = mapped_column(Text, nullable=False, default="")
     cookies: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    engine: Mapped[str] = mapped_column(String(16), nullable=False, default="auto")
+    gallerydl: Mapped[str] = mapped_column(Text, nullable=False, default="")
     cli: Mapped[str] = mapped_column(Text, nullable=False, default="")
     default: Mapped[bool] = mapped_column("is_default", Boolean, nullable=False, default=False)
     priority: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

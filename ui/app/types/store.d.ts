@@ -1,3 +1,4 @@
+import type { DownloadEngine, GalleryFile } from './item';
 type ItemStatus =
   | 'started'
   | 'finished'
@@ -36,6 +37,12 @@ type MediaProfile = {
 
 type StoreItem = {
   _id: string;
+  engine?: DownloadEngine;
+  gallerydl?: string;
+  gallery_metadata?: Record<string, unknown>;
+  files?: GalleryFile[];
+  is_gallery?: boolean;
+  gallery_count?: number | null;
   error: string | null;
   id: string;
   title: string;
@@ -75,6 +82,7 @@ type StoreItem = {
     thumbnail?: string;
     uploader?: string;
     media_profile?: MediaProfile;
+    is_image?: boolean;
     is_audio?: boolean;
     is_video?: boolean;
     live_in?: string;

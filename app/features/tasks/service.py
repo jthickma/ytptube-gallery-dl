@@ -166,6 +166,8 @@ class Tasks(metaclass=Singleton):
                 item=Item.format(
                     {
                         "url": task.url,
+                        "engine": task.engine,
+                        "gallerydl": task.gallerydl,
                         "preset": preset,
                         "folder": folder,
                         "template": template,

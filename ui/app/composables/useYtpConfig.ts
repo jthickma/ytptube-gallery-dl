@@ -12,6 +12,10 @@ const CONFIG_TTL = 10;
 const state = reactive<ConfigState>({
   showForm: useStorage('showForm', true),
   app: {
+    gallerydl_enabled: true,
+    gallerydl_auto: true,
+    gallerydl_filename: '',
+    gallerydl_new_version: '',
     download_path: '/downloads',
     remove_files: false,
     output_template: '',

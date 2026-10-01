@@ -4472,3 +4472,8 @@ response includes an English `error` fallback and a stable `code` for programmat
 See the [error code table](#error-responses) in Global Notes for the full list of codes and their expected params.
 
 ---
+
+## Gallery-dl engine
+
+History, preset, and task requests also accept `engine` and `gallerydl`.
+See the [gallery-dl API reference](docs/gallery-dl.md#api) for endpoints and multi-file records.

@@ -771,6 +771,17 @@ def diagnostics_error_report(config: Config) -> dict[str, Any]:
 async def collect_diagnostics(config: Config) -> dict[str, Any]:
     checks: list[DiagnosticCheck] = [
         _check_ytdlp_package(),
+        _package_check(
+            "gallery-dl",
+            label="gallery-dl package",
+            group="core",
+            required=config.gallerydl_enabled,
+            description="Image, gallery, and collection download engine.",
+            present_message="Installed.",
+            missing_message="Missing.",
+            check_id="gallery_dl_package",
+            module_name="gallery_dl",
+        ),
         _check_apprise_package(config),
         _check_curl_transport(),
         _check_pot_provider_package(),

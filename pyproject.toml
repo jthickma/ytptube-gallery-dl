@@ -29,6 +29,7 @@ dependencies = [
   "brotlicffi",
   "anyio",
   "yt-dlp[default]",
+  "gallery-dl[video]>=1.32.14,<2",
   "platformdirs",
   "multidict==6.5.1",
   "dateparser>=1.2.1",

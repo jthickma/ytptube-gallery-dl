@@ -7,6 +7,8 @@
 
 ## Guides
 
+- [Gallery-dl](gallery-dl.md): Download and browse image collections, configure engine selection, and schedule recurring galleries.
+
 - [Native builds](native-builds.md): Install and operate the Windows, macOS, and Linux releases.
 - [Authentication](authentication.md): Configure local, OIDC, and trusted proxy authentication.
 - [Generic Task Definitions](task-definitions.md): Add recurring sources for sites without built-in handlers.

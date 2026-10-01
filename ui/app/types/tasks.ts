@@ -1,3 +1,4 @@
+import type { DownloadEngine } from './item';
 import type { Paginated } from '~/types/responses';
 
 export interface Task {
@@ -8,6 +9,8 @@ export interface Task {
   preset?: string;
   timer?: string;
   template?: string;
+  engine?: DownloadEngine;
+  gallerydl?: string;
   cli?: string;
   ignore_conditions?: readonly string[];
   auto_start?: boolean;
@@ -28,12 +31,13 @@ export type TaskScheduleMetadata = {
   fulltitle?: unknown;
 };
 
-export type TaskScheduleDraft = Required<
-  Pick<
-    Task,
-    'name' | 'url' | 'preset' | 'folder' | 'template' | 'cli' | 'ignore_conditions' | 'timer'
-  >
->;
+export type TaskScheduleDraft = Pick<Task, 'engine' | 'gallerydl'> &
+  Required<
+    Pick<
+      Task,
+      'name' | 'url' | 'preset' | 'folder' | 'template' | 'cli' | 'ignore_conditions' | 'timer'
+    >
+  >;
 
 export type TaskList = Paginated<Task>;
 

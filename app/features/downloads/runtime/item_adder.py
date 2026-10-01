@@ -170,6 +170,24 @@ async def add(
     _preset: Preset | None = Presets.get_instance().get(item.preset)
     logs = []
 
+    from app.features.gallerydl.detect import resolve_engine
+
+    try:
+        engine = resolve_engine(item.url, item.engine, _preset, item.extras, queue.config)
+        if engine == "gallerydl":
+            from .gallery_processor import add_gallery
+
+            if _preset:
+                item.folder = item.folder or _preset.folder
+                item.cookies = item.cookies or _preset.cookies
+                if _preset.engine == "gallerydl":
+                    item.template = item.template or _preset.template
+            item.engine = "gallerydl"
+            return await add_gallery(queue, item, already=already)
+        item.engine = "ytdlp"
+    except ValueError as exc:
+        return {"status": "error", "msg": str(exc)}
+
     if item.has_cli():
         try:
             arg_converter(args=item.cli, level=True)

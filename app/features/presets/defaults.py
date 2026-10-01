@@ -103,3 +103,35 @@ DEFAULT_PRESETS: list[dict[str, object]] = [
         "updated_at": DEFAULT_PRESET_UPDATED_AT,
     },
 ]
+
+DEFAULT_PRESETS.extend(
+    [
+        {
+            "name": "gallery_full",
+            "engine": "gallerydl",
+            "gallerydl": "--write-metadata",
+            "description": "Complete galleries, native source folders, per-file archives, and metadata sidecars.",
+            "default": True,
+            "priority": 0,
+            "updated_at": DEFAULT_PRESET_UPDATED_AT,
+        },
+        {
+            "name": "gallery_images",
+            "engine": "gallerydl",
+            "gallerydl": "--write-metadata -o videos=false",
+            "description": "Image galleries with metadata, excluding videos on extractors that support the videos option.",
+            "default": True,
+            "priority": 0,
+            "updated_at": DEFAULT_PRESET_UPDATED_AT,
+        },
+        {
+            "name": "gallery_video",
+            "engine": "gallerydl",
+            "gallerydl": "-o videos=true",
+            "description": "Gallery images and videos, including gallery-dl's yt-dlp-backed downloader.",
+            "default": True,
+            "priority": 0,
+            "updated_at": DEFAULT_PRESET_UPDATED_AT,
+        },
+    ]
+)

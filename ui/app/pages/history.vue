@@ -208,6 +208,13 @@
                         <div class="truncate font-medium text-highlighted">
                           <a target="_blank" :href="item.url" class="hover:underline">
                             {{ item.title }}
+                            <UBadge
+                              v-if="item.engine === 'gallerydl'"
+                              color="neutral"
+                              variant="soft"
+                              size="xs"
+                              >gallery-dl · {{ item.gallery_count || 0 }}</UBadge
+                            >
                           </a>
                         </div>
                       </UTooltip>
@@ -263,6 +270,13 @@
                               <div class="flex flex-wrap items-center gap-2">
                                 <p class="text-sm font-semibold text-highlighted">
                                   {{ item.title }}
+                                  <UBadge
+                                    v-if="item.engine === 'gallerydl'"
+                                    color="neutral"
+                                    variant="soft"
+                                    size="xs"
+                                    >gallery-dl · {{ item.gallery_count || 0 }}</UBadge
+                                  >
                                 </p>
                                 <UBadge color="info" variant="soft" size="sm">{{
                                   item.preset
@@ -467,6 +481,13 @@
                     <div class="min-w-0 text-sm font-semibold text-highlighted">
                       <a target="_blank" :href="item.url" class="block truncate hover:underline">
                         {{ item.title }}
+                        <UBadge
+                          v-if="item.engine === 'gallerydl'"
+                          color="neutral"
+                          variant="soft"
+                          size="xs"
+                          >gallery-dl · {{ item.gallery_count || 0 }}</UBadge
+                        >
                       </a>
                     </div>
                   </UTooltip>
@@ -488,7 +509,16 @@
                     <template #content>
                       <UCard class="max-w-137.5" :ui="{ body: 'space-y-3 p-4' }">
                         <div class="space-y-2">
-                          <p class="text-sm font-semibold text-highlighted">{{ item.title }}</p>
+                          <p class="text-sm font-semibold text-highlighted">
+                            {{ item.title }}
+                            <UBadge
+                              v-if="item.engine === 'gallerydl'"
+                              color="neutral"
+                              variant="soft"
+                              size="xs"
+                              >gallery-dl · {{ item.gallery_count || 0 }}</UBadge
+                            >
+                          </p>
                           <p
                             v-if="getItemTaskUrl(item)"
                             class="flex flex-wrap items-baseline gap-x-1 text-xs text-toned"
@@ -882,7 +912,9 @@
       @update:open="handleVideoOpenChange"
     >
       <template #body>
+        <GalleryView v-if="video_item?.engine === 'gallerydl'" :item="video_item" />
         <LazyVideoPlayer
+          v-else
           type="default"
           :isMuted="false"
           autoplay="true"
@@ -1274,7 +1306,7 @@ const itemActionGroups = (item: StoreItem): Array<Array<Record<string, unknown>>
 
   if (item.filename) {
     mediaActions.push({
-      label: t('common.playVideo'),
+      label: item.engine === 'gallerydl' ? t('gallery.view') : t('common.playVideo'),
       icon: 'i-lucide-play',
       onSelect: () => {
         video_item.value = item;
@@ -1302,7 +1334,7 @@ const itemActionGroups = (item: StoreItem): Array<Array<Record<string, unknown>>
     });
   } else if (isEmbedable(item.url)) {
     mediaActions.push({
-      label: t('common.playVideo'),
+      label: item.engine === 'gallerydl' ? t('gallery.view') : t('common.playVideo'),
       icon: 'i-lucide-play',
       onSelect: () => {
         embed_url.value = getEmbedable(item.url) as string;

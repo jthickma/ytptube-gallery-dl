@@ -402,6 +402,11 @@ async def item_thumbnail(request: Request, queue: DownloadQueue, config: Config)
         )
 
     cache.delete(miss_key)
+    if item.info.engine == "gallerydl":
+        import mimetypes
+
+        if (mimetypes.guess_type(filepath.name)[0] or "").startswith("image/"):
+            return web.FileResponse(path=filepath)
 
     local_thumb: Path | None = pick_local_thumb(filepath)
     if local_thumb and local_thumb.exists() and local_thumb.is_file():
