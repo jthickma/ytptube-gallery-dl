@@ -2,6 +2,7 @@ import copy
 import json
 import shlex
 from pathlib import Path
+from typing import Any
 
 from app.library.Utils import calc_download_path
 
@@ -46,9 +47,9 @@ def gallerydl_arg_converter(args: str) -> dict:
             raise ValueError(msg)
         return data
     parsed = parse_cli(args)
-    result = {}
+    result: dict[str, Any] = {}
     for path, key, value in parsed.options:
-        target = result
+        target: dict[str, Any] = result
         for part in path:
             target = target.setdefault(part, {})
         target[key] = value

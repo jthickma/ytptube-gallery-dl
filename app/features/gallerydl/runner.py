@@ -135,8 +135,9 @@ class GalleryDLRunner:
                 try:
                     return super().download(url)
                 finally:
-                    if self.pathfmt.temppath:
-                        runner.partial_files.add(self.pathfmt.temppath)
+                    pathfmt = self.pathfmt
+                    if pathfmt is not None and pathfmt.temppath:
+                        runner.partial_files.add(pathfmt.temppath)
 
         # initialize_logging defines upstream's TRACE logger method. It runs
         # only inside the worker, so no server logging state is mutated.

@@ -3,11 +3,13 @@ import base64
 import functools
 import http.server
 import logging
+import multiprocessing
 import queue
 import sqlite3
 import threading
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import AsyncMock
 
 import pytest
@@ -35,7 +37,7 @@ def media_server(tmp_path):
     (served / "image.png").write_bytes(PNG)
 
     class Handler(http.server.SimpleHTTPRequestHandler):
-        def log_message(self, *_):
+        def log_message(self, format: str, *args: Any) -> None:
             pass
 
     server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(Handler, directory=str(served)))
@@ -203,8 +205,18 @@ def test_engine_selection_and_switches(monkeypatch):
     assert resolve_engine("https://vsco.co/fixture/gallery", "gallerydl") == "gallerydl"
 
 
+@pytest.fixture
+def status_queue():
+    status = multiprocessing.Queue()
+    try:
+        yield status
+    finally:
+        status.close()
+        status.join_thread()
+
+
 @pytest.mark.asyncio
-async def test_tracker_multi_file_finishes_once(tmp_path, monkeypatch):
+async def test_tracker_multi_file_finishes_once(tmp_path, monkeypatch, status_queue):
     config = Config.get_instance()
     monkeypatch.setattr(config, "config_path", str(tmp_path))
     dto = ItemDTO(
@@ -215,7 +227,7 @@ async def test_tracker_multi_file_finishes_once(tmp_path, monkeypatch):
         folder="",
         download_dir=str(tmp_path),
     )
-    tracker = StatusTracker(dto, dto._id, str(tmp_path), None, queue.Queue(), logging.getLogger(__name__))
+    tracker = StatusTracker(dto, dto._id, str(tmp_path), None, status_queue, logging.getLogger(__name__))
     for name in ("a.png", "b.png"):
         path = tmp_path / name
         path.write_bytes(PNG)

@@ -104,6 +104,11 @@ class Download:
     def _download_gallerydl(self) -> None:
         from app.features.gallerydl.runner import GalleryDLRunner
 
+        status_queue = self.status_queue
+        if status_queue is None:
+            msg = "status_queue must be initialized before _download(). Call start() first."
+            raise RuntimeError(msg)
+
         cookie_file = None
         try:
             params = self.info.options.copy()
@@ -112,18 +117,16 @@ class Download:
                 params["cookies"] = str(create_cookies_file(self.info.cookies, cookie_file))
             if Config.get_instance().gallerydl_tmp_use and self._temp_manager.temp_path:
                 params["part-directory"] = str(self._temp_manager.temp_path)
-            runner = GalleryDLRunner(
-                self.info, params, self.status_queue, self.logger, self._process_manager.cancel_event
-            )
+            runner = GalleryDLRunner(self.info, params, status_queue, self.logger, self._process_manager.cancel_event)
             runner.install_cancel_handler()
             runner.run()
         except Exception as exc:
             self.logger.exception("Gallery-dl download failed for '%s'.", self.info.url)
-            self.status_queue.put({"id": self.id, "status": "error", "error": str(exc)})
+            status_queue.put({"id": self.id, "status": "error", "error": str(exc)})
         finally:
             if cookie_file:
                 cookie_file.unlink(missing_ok=True)
-            self.status_queue.put(Terminator())
+            status_queue.put(Terminator())
 
     def _download_ytdlp(self) -> None:
         """Run yt-dlp across the subprocess boundary."""
