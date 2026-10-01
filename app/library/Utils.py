@@ -1,5 +1,5 @@
 import copy
-import glob
+
 import re
 import shutil
 import subprocess
@@ -421,7 +421,9 @@ def get_file_sidecar(file: Path | None = None) -> dict[str, list[dict[str, Any]]
     if not file:
         return files
 
-    for i, f in enumerate(file.parent.glob(f"{glob.escape(file.stem)}.*")):
+    for f in file.parent.iterdir():
+        if f.stem != file.stem:
+            continue
         if f == file or f.is_file() is False or f.stem.startswith("."):
             continue
 
@@ -439,7 +441,12 @@ def get_file_sidecar(file: Path | None = None) -> dict[str, list[dict[str, Any]]
                 continue
             lg: re.Match[str] | None = re.search(r"\.(?P<lang>\w{2,3})\.\w{3}$", f.name)
             lang: str | None = lg.groupdict().get("lang") if lg else "und"
-            content: dict[str, Any] = {"file": f, "lang": lang, "name": f"{f.suffix[1:].upper()} ({i}) - {lang}"}
+            subtitle_index = len(files.get("subtitle", []))
+            content: dict[str, Any] = {
+                "file": f,
+                "lang": lang,
+                "name": f"{f.suffix[1:].upper()} ({subtitle_index}) - {lang}",
+            }
         else:
             content = {"file": f}
 

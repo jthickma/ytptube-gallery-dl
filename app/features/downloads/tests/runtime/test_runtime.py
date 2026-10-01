@@ -640,6 +640,8 @@ class TestDownloadFlow:
                 template="",
                 cookies="",
                 cli="--format worst",
+                engine="auto",
+                gallerydl="",
                 default=False,
                 priority=0,
             )
