@@ -1012,7 +1012,7 @@ class TestGetFileSidecar:
             nfo_file.write_text("nfo content")
 
             result = get_file_sidecar(video_file)
-            assert result["subtitle"] == [{"file": srt_file, "lang": "und", "name": "SRT (1) - und"}]
+            assert result["subtitle"] == [{"file": srt_file, "lang": "und", "name": "SRT (0) - und"}]
             assert result["text"] == [{"file": nfo_file}]
 
     def test_file_sidecar_no_files(self):

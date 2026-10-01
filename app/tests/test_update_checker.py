@@ -133,6 +133,7 @@ class TestUpdateChecker:
         config.check_for_updates = True
         config.new_version = ""
         config.yt_new_version = ""
+        config.gallerydl_enabled = False
 
         mock_app_response = MagicMock()
         mock_app_response.status_code = 200
@@ -274,6 +275,7 @@ class TestUpdateChecker:
         config.check_for_updates = True
         config.new_version = ""
         config.yt_new_version = ""
+        config.gallerydl_enabled = False
 
         mock_app_response = MagicMock()
         mock_app_response.status_code = 200

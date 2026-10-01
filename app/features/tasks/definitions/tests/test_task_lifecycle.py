@@ -104,6 +104,8 @@ def _scheduled_task() -> TaskModel:
         name="Example",
         url="https://example.com",
         preset="default",
+        engine="auto",
+        gallerydl="",
         folder="",
         template="",
         cli="",
