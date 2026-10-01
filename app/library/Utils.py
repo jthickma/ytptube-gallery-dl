@@ -1,5 +1,5 @@
 import copy
-import glob
+
 import re
 import shutil
 import subprocess
@@ -421,7 +421,9 @@ def get_file_sidecar(file: Path | None = None) -> dict[str, list[dict[str, Any]]
     if not file:
         return files
 
-    for f in file.parent.glob(f"{glob.escape(file.stem)}.*"):
+    for f in file.parent.iterdir():
+        if f.stem != file.stem:
+            continue
         if f == file or f.is_file() is False or f.stem.startswith("."):
             continue
 
