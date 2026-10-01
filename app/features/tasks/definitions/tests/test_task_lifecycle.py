@@ -106,6 +106,8 @@ def _scheduled_task() -> TaskModel:
         preset="default",
         folder="",
         template="",
+        engine="auto",
+        gallerydl="",
         cli="",
         ignore_conditions=["12", "Named"],
         auto_start=True,
@@ -126,6 +128,7 @@ async def test_runner_error(monkeypatch: pytest.MonkeyPatch) -> None:
 
     await service._runner(_scheduled_task())
 
+    queue.add.assert_awaited_once()
     emitted = [call.args[0] for call in events.emit.call_args_list]
     assert emitted == [Events.TASK_ERROR]
 

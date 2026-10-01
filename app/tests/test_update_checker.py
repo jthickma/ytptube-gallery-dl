@@ -142,7 +142,17 @@ class TestUpdateChecker:
         mock_ytdlp_response.status_code = 200
         mock_ytdlp_response.json.return_value = {"tag_name": "2026.12.31"}
 
-        mock_get = AsyncMock(side_effect=[mock_app_response, mock_ytdlp_response])
+        config.gallerydl_enabled = True
+        config.gallerydl_new_version = ""
+        mock_gallerydl_response = MagicMock()
+        mock_gallerydl_response.status_code = 200
+        mock_gallerydl_response.json.return_value = {"tag_name": "v99.0.1"}
+        responses = {
+            UpdateChecker.GITHUB_API_URL: mock_app_response,
+            UpdateChecker.YTDLP_API_URL: mock_ytdlp_response,
+            "https://api.github.com/repos/mikf/gallery-dl/releases/latest": mock_gallerydl_response,
+        }
+        mock_get = AsyncMock(side_effect=lambda url, **kwargs: responses[url])
         mock_http = MagicMock()
         mock_http.get = mock_get
 
@@ -154,6 +164,8 @@ class TestUpdateChecker:
 
         assert "v99.0.0" == config.new_version, "Should store full tag_name including 'v' prefix"
         assert "2026.12.31" == config.yt_new_version, "Should store yt-dlp tag_name"
+        assert config.gallerydl_new_version == "v99.0.1"
+        assert mock_get.await_count == 3
 
     def test_subscribe_to_started_event(self):
         import asyncio
@@ -283,7 +295,17 @@ class TestUpdateChecker:
         mock_ytdlp_response.status_code = 200
         mock_ytdlp_response.json.return_value = {"tag_name": "2026.12.31"}
 
-        mock_get = AsyncMock(side_effect=[mock_app_response, mock_ytdlp_response])
+        config.gallerydl_enabled = True
+        config.gallerydl_new_version = ""
+        mock_gallerydl_response = MagicMock()
+        mock_gallerydl_response.status_code = 200
+        mock_gallerydl_response.json.return_value = {"tag_name": "v99.0.1"}
+        responses = {
+            UpdateChecker.GITHUB_API_URL: mock_app_response,
+            UpdateChecker.YTDLP_API_URL: mock_ytdlp_response,
+            "https://api.github.com/repos/mikf/gallery-dl/releases/latest": mock_gallerydl_response,
+        }
+        mock_get = AsyncMock(side_effect=lambda url, **kwargs: responses[url])
         mock_http = MagicMock()
         mock_http.get = mock_get
         mock_client.return_value = mock_http
@@ -302,3 +324,6 @@ class TestUpdateChecker:
         assert "update_available" == ytdlp_status2, "Should return cached yt-dlp result"
         assert app_version1 == app_version2, "App versions should match from cache"
         assert ytdlp_version1 == ytdlp_version2, "yt-dlp versions should match from cache"
+
+        assert config.gallerydl_new_version == "v99.0.1"
+        assert mock_get.await_count == 3, "All three update results should be cached"

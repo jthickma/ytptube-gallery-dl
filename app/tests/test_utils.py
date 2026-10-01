@@ -1015,6 +1015,27 @@ class TestGetFileSidecar:
             assert result["subtitle"] == [{"file": srt_file, "lang": "und", "name": "SRT (1) - und"}]
             assert result["text"] == [{"file": nfo_file}]
 
+    @pytest.mark.parametrize("reverse", [False, True])
+    def test_subtitle_numbering_is_independent_of_directory_order(self, monkeypatch, reverse):
+        with temporary_test_dir("file-sidecar-order") as base_path:
+            video = base_path / "video.mp4"
+            english = base_path / "video.en.srt"
+            french = base_path / "video.fr.srt"
+            nfo = base_path / "video.nfo"
+            empty = base_path / "video.de.srt"
+            for file in (video, english, french, nfo):
+                file.write_text("content")
+            empty.touch()
+            entries = [video, nfo, french, empty, english]
+            monkeypatch.setattr(Path, "glob", lambda self, pattern: iter(entries[::-1] if reverse else entries))
+
+            result = get_file_sidecar(video)
+
+            assert result["subtitle"] == [
+                {"file": english, "lang": "en", "name": "SRT (1) - en"},
+                {"file": french, "lang": "fr", "name": "SRT (2) - fr"},
+            ]
+
     def test_file_sidecar_no_files(self):
         with temporary_test_dir("file-sidecar-empty") as base_path:
             video_file = base_path / "video.mp4"

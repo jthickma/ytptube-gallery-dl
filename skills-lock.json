@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "diagnose-ci-failures": {
+      "source": "warpdotdev/common-skills",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/diagnose-ci-failures/SKILL.md",
+      "computedHash": "b2facf371cb6ab69fa12432c8f3b44a07c74881e7ec9b9750cb8cb30e933a4df"
+    }
+  }
+}

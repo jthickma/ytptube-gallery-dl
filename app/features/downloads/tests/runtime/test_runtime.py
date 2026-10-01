@@ -639,6 +639,8 @@ class TestDownloadFlow:
                 folder="",
                 template="",
                 cookies="",
+                engine="auto",
+                gallerydl="",
                 cli="--format worst",
                 default=False,
                 priority=0,
