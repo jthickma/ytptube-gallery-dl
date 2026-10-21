@@ -10,6 +10,7 @@ from app.features.tasks.models import TaskModel
 from app.features.tasks.service import Tasks
 from app.library.Events import EventBus, Events
 from app.library.Services import Services
+from app.library.config import Config
 
 
 def _task() -> HandleTask:
@@ -176,3 +177,28 @@ async def test_handler_ignores(monkeypatch: pytest.MonkeyPatch) -> None:
     assert isinstance(result, TaskResult)
     payload = events.emit.call_args.kwargs["data"]
     assert payload["extras"]["ignore_conditions"] == ["12", "Named"]
+
+
+@pytest.mark.asyncio
+async def test_disabled_gallery_task_does_not_prevent_video_dispatch(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+    monkeypatch.setattr(Config.get_instance(), "gallerydl_enabled", False)
+    gallery = HandleTask(id=1, name="Gallery", url="https://vsco.co/fixture/gallery", engine="gallerydl", preset="")
+    video = HandleTask(
+        id=2,
+        name="Video",
+        url="https://example.com/video",
+        engine="ytdlp",
+        preset="",
+        cli=f"--download-archive {tmp_path / 'archive.txt'}",
+    )
+    service = TaskHandle.__new__(TaskHandle)
+    service._repo = MagicMock(all=AsyncMock(return_value=[gallery, video]))
+    service._config = MagicMock(task_handler_random_delay=1.0)
+    handler = type("VideoHandler", (), {})
+    service._find_handler = AsyncMock(return_value=handler)
+    service._dispatch = AsyncMock(return_value=TaskResult())
+
+    await service._dispatcher()
+
+    service._find_handler.assert_awaited_once_with(video)
+    service._dispatch.assert_awaited_once_with(video, handler, delay=0.0)

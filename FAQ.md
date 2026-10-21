@@ -153,21 +153,22 @@ Set `url`, `preset`, and `apiKey` for your YTPTube instance. Create the API key 
 
 ## iOS Shortcuts
 
-You can download [Add To YTPTube](https://www.icloud.com/shortcuts/6df61c97d97b4e539c9100999ba39dd4) shortcut and use it 
+You can download [Add To YTPTube](https://www.icloud.com/shortcuts/d69215cb46944cb99197c64c1a277fa3) shortcut and use it
 to send links to your YTPTube instance. You have to edit the shortcut and replace the following:
 
-- `https://ytp.example.org` with your YTPTube instance.
-- The shortcut currently uses Basic authentication. Replace its credential value with `username:ytp_...`: your account
-  username and an API key, not your account password. Leave it empty when authentication is disabled.
+- `https://ytp.example.com` with your YTPTube instance URL.
+- `api_key` with your API key generated via `Account -> Create key`. Leave it empty when authentication is disabled.
 
 This shortcut lets you select a preset from your instance. You can add presets for websites that need cookies and use
 those presets to download directly from your iOS device.
 
-### Advanced iOS Shortcut
+### Save to media
 
-This shortcut [YTPTube To Media](https://www.icloud.com/shortcuts/4dc579382f254635ad5785424055f173) parses the `yt-dlp`
-output and attempts to download media directly to your iOS device. It doesn't always work. We provide no support for
-this use case beyond the shortcut itself. The shortcut doesn't parse `http_headers`; it parses only cookies.
+This shortcut [Save To Media](https://www.icloud.com/shortcuts/30cff5a4f55548a6ba8481a6b3331fd2) will attempt to download
+pre-merged format directly to your iOS device. It doesn't always work as many websites don't offer pre-merged formats.
+
+If it going to work you will get prompted with `Download: title?` and can confirm to start the download. or notification
+that the download could not be started because the pre-merged format is not available.
 
 # Authentication
 
@@ -439,15 +440,10 @@ render:x:105:your_docker_username
 In my docker host the group id for `video` is `44` and for `render` is `105`. change what needed in the `compose.yaml`
 file to match your setup.
 
-If for some reason the initial test for GPU encoding fails, YTPTube will fallback to software encoding. You can force
-software encoding by setting the `YTP_STREAMER_VCODEC` environment variable to `libx264`. If you want to force GPU 
-encoding, set the `YTP_STREAMER_VCODEC` environment variable to one of the supported GPU codecs, for 
-example `h264_vaapi` or `h264_nvenc` depending on your GPU. For the supported codec implementations, 
-see [segment_encoders.py](app/features/streaming/library/segment_encoders.py).
-
-> [!NOTE]
-> If GPU encoding fails and software encoding is used, restart the container before trying GPU encoding again. YTPTube
-> tests GPU encoding only once, when the first video stream starts.
+YTPTube falls back to software encoding if hardware encoding fails. Set `YTP_STREAMER_VCODEC=libx264` to use
+software encoding, or choose a supported hardware encoder such as `h264_vaapi` or `h264_nvenc` for your GPU.
+Set `YTP_STREAMER_ACODEC` to choose the audio codec and `YTP_VAAPI_DEVICE` to select the VAAPI/QSV device.
+See [utils.py](app/features/streaming/utils.py) for supported encoders.
 
 # How to setup CI on Gitea?
 

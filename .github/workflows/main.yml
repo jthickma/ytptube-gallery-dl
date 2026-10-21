@@ -29,7 +29,7 @@ env:
   BUILD_ARM64: ${{ vars.BUILD_ARM64 != 'false' && 'true' || 'false' }}
   DOCKERHUB_SLUG: ${{ secrets.DOCKERHUB_USERNAME }}/ytptube-gallery-dl
   GHCR_SLUG: ghcr.io/${{ github.repository }}
-  BUN_VERSION: latest
+  BUN_VERSION: "1.4.2"
   NODE_VERSION: 22
   PYTHON_VERSION: "3.13"
 
@@ -149,12 +149,8 @@ jobs:
           NODE_ENV: production
         run: bun run generate
 
-      - name: Install GitPython
-        run: pip install gitpython
-
       - name: Generate CHANGELOG.json
-        run: |
-          python3 .github/scripts/generate_changelog.py -p . -f ./ui/exported/CHANGELOG.json
+        run: python3 .github/scripts/generate_changelog.py --output ./ui/exported/CHANGELOG.json
 
       - name: Upload frontend build (GitHub)
         if: env.REGISTRY == ''

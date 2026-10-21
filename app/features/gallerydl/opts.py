@@ -11,6 +11,14 @@ def _invalid(message, *_):
     raise ValueError(str(message))
 
 
+def _merge_options(target: dict, values: dict) -> None:
+    for key, value in values.items():
+        if isinstance(value, dict) and isinstance(target.get(key), dict):
+            _merge_options(target[key], value)
+        else:
+            target[key] = copy.deepcopy(value)
+
+
 def parse_cli(args: str):
     """Use upstream's parser without allowing argparse to exit the API process."""
     from gallery_dl import job, option
@@ -91,14 +99,7 @@ class GalleryDLOpts:
         return cls()
 
     def add(self, options: dict):
-        def merge(target, values):
-            for key, value in values.items():
-                if isinstance(value, dict) and isinstance(target.get(key), dict):
-                    merge(target[key], value)
-                else:
-                    target[key] = copy.deepcopy(value)
-
-        merge(self.options, options)
+        _merge_options(self.options, options)
         return self
 
     def add_raw(self, args: str):
@@ -168,4 +169,10 @@ def apply_options(options: dict) -> None:
             raise ValueError(msg) from exc
     for key, value in options.items():
         if not key.startswith("_"):
-            config.set((), key, copy.deepcopy(value))
+            current = config.get((), key)
+            if isinstance(value, dict) and isinstance(current, dict):
+                merged = copy.deepcopy(current)
+                _merge_options(merged, value)
+                config.set((), key, merged)
+            else:
+                config.set((), key, copy.deepcopy(value))

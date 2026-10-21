@@ -64,7 +64,7 @@
     "reset": "إعادة تعيين",
     "retry": "إعادة المحاولة",
     "retryCount": "تمت إعادة المحاولة {count} مرات",
-    "loading": "جاري التحميل…",
+    "loading": "جاري التحميل...",
     "unknownError": "حدث خطأ غير متوقع.",
     "unknown": "غير معروف",
     "noResults": "لا توجد نتائج",
@@ -659,7 +659,6 @@
     "ytdlpOption": "خيار yt-dlp: {field}",
     "playing": "تشغيل: {title}",
     "started": "بدأ: {time}",
-    "buildInfo": "البناء: {date}، الفرع: {branch}، SHA: {sha}",
     "breadcrumb": "مسار التنقل",
     "showControls": "إظهار عناصر التحكم",
     "sepComma": "فاصلة",
@@ -1293,6 +1292,11 @@
         "navLabel": "المصادقة",
         "description": "تهيئة مصادقة الحساب المحلي وOIDC والوكيل الموثوق."
       },
+      "mediaHandlers": {
+        "title": "معالجات الوسائط",
+        "navLabel": "معالجات الوسائط",
+        "description": "اختيار معالج وتهيئته لكل تنزيل."
+      },
       "faq": {
         "title": "FAQ",
         "navLabel": "FAQ",
@@ -1316,6 +1320,15 @@
     }
   },
   "player": {
+    "audio": "الصوت",
+    "browserAudio": "الصوت المحدد بواسطة المتصفح (مباشر)",
+    "burnIn": "دمج في الفيديو",
+    "preparing": "جارٍ تجهيز التشغيل...",
+    "preparationFailed": "تعذر تجهيز التشغيل. أعد فتح المشغل للمحاولة مجددًا.",
+    "playFailed": "لم يبدأ التشغيل. اضغط تشغيل للمحاولة مجددًا.",
+    "playbackFailed": "فشل التشغيل.",
+    "hlsUnsupported": "هذا المتصفح لا يدعم تشغيل HLS.",
+    "sessionExpired": "تعذر تجديد جلسة المشغل. أعد فتح المشغل.",
     "subtitleLoadFailed": "فشل تحميل الترجمات لهذا الفيديو.",
     "subtitleRenderFailed": "فشل عرض ترجمات ASS في المتصفح."
   },

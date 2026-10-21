@@ -20,6 +20,11 @@ with automatic engine selection, recurring sources, and a gallery viewer in Hist
 
 See [Features](docs/features.md) for the full workflow.
 
+### If you like my work, you might also like my other projects:
+
+* [WatchState](https://github.com/arabcoders/watchstate): Self-hosted service to sync your media servers without relying on 3rd-party external services.
+* [Millwright](https://github.com/arabcoders/millwright): is a self-hosted automation interface for FFmpeg.
+
 ## Screenshots
 
 Standard interface:

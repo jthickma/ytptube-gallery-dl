@@ -85,16 +85,16 @@ class TaskHandle:
                 s["d"].append(task.name)
                 continue
 
-            if not task.get_archive_file():
-                LOG.debug(
-                    "Task '%s' does not have an archive file configured.",
-                    task.name,
-                    extra={"task_id": task.id, "task_name": task.name},
-                )
-                s["f"].append(task.name)
-                continue
-
             try:
+                if not task.get_archive_file():
+                    LOG.debug(
+                        "Task '%s' does not have an archive file configured.",
+                        task.name,
+                        extra={"task_id": task.id, "task_name": task.name},
+                    )
+                    s["f"].append(task.name)
+                    continue
+
                 handler: type[BaseHandler] | None = await self._find_handler(task)
                 if handler is None:
                     s["u"].append(task.name)

@@ -152,6 +152,7 @@
                       <span class="hidden xl:inline">{{ t('common.reconnect') }}</span>
                     </UButton>
                     <NotifyDropdown />
+                    <ThemeButton square :show-label="false" />
 
                     <UButton
                       color="neutral"
@@ -284,11 +285,25 @@
                             <span>YTPTube</span>
                           </NuxtLink>
 
-                          <UTooltip :text="buildTooltip">
-                            <span class="text-xs has-tooltip">
-                              {{ config?.app?.app_version || t('app.footer.versionUnknown') }}
-                            </span>
-                          </UTooltip>
+                          <span class="text-xs has-tooltip">
+                            {{ config?.app?.app_version || t('app.footer.versionUnknown') }}
+                            · {{ config?.app?.app_build_date || 'unknown' }} ·
+                            <UTooltip
+                              :text="config?.app?.app_commit_sha"
+                              v-if="config?.app?.app_commit_sha"
+                            >
+                              <NuxtLink
+                                :href="`https://github.com/ArabCoders/ytptube/commit/${config.app.app_commit_sha}`"
+                                target="_blank"
+                                class="hover:text-primary hover:underline"
+                                @click.stop
+                              >
+                                {{ config.app.app_commit_sha.slice(0, 7) }}
+                              </NuxtLink>
+                            </UTooltip>
+                            <span v-else>unknown</span>
+                            · {{ config?.app?.app_branch || 'unknown' }}
+                          </span>
                         </div>
 
                         <p
@@ -393,7 +408,10 @@
             :groups="routeSearchGroups"
             shortcut="meta_k"
             :placeholder="t('app.search')"
-            :ui="{ modal: 'sm:max-w-3xl h-full sm:h-[28rem]' }"
+            :ui="{
+              modal:
+                'sm:max-w-3xl h-full sm:h-[28rem] bg-elevated/80 dark:bg-elevated/30 backdrop-blur-md',
+            }"
           />
 
           <AccountModal v-model:open="accountOpen" />
@@ -427,7 +445,7 @@ import {
 } from '~/utils/topLevelNavigation';
 
 const { t } = useI18n();
-const { isRtl, locale, locales, changeLocale } = useAppLocale();
+const { isRtl, locale } = useAppLocale();
 
 type SidebarSection = {
   id: string;
@@ -712,14 +730,6 @@ useHead(() => ({
   title: formatPageTitle(documentTitle.value),
 }));
 
-const buildTooltip = computed(() =>
-  t('common.buildInfo', {
-    date: config.app?.app_build_date,
-    branch: config.app?.app_branch,
-    sha: config.app?.app_commit_sha,
-  }),
-);
-
 const connectionStatusColor = computed(() => {
   if (socket.connectionStatus === 'connected') {
     return 'text-success';
@@ -810,20 +820,6 @@ const routeSearchGroups = computed(() => [
       },
     ],
   },
-  {
-    id: 'language',
-    label: t('common.language'),
-    items: locales.value
-      .filter((entry) => typeof entry !== 'string')
-      .map((entry) => {
-        const obj = entry as { name: string; code: string };
-        return {
-          label: `(${String(obj.code).toUpperCase()}) ${obj.name}`,
-          icon: obj.code === locale.value ? 'i-lucide-check' : 'i-lucide-globe',
-          onSelect: () => void switchLanguage(obj.code),
-        };
-      }),
-  },
 ]);
 
 const closeRouteSearch = async (): Promise<void> => {
@@ -848,11 +844,6 @@ const resumeDownloads = async (): Promise<void> => {
 const openSettings = async (): Promise<void> => {
   await closeRouteSearch();
   root.value?.open();
-};
-
-const switchLanguage = async (code: string): Promise<void> => {
-  await closeRouteSearch();
-  await changeLocale(code);
 };
 
 const handleRouteSelect = async (item: NavItem) => {

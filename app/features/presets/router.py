@@ -150,7 +150,11 @@ async def presets_patch(request: Request, encoder: Encoder, notify: EventBus, re
         )
 
     try:
-        validated = PresetPatch.model_validate(data)
+        validated = PresetPatch.model_validate(data, context={"engine": model.engine})
+        payload = validated.model_dump(exclude_unset=True)
+        # Engine and CLI must also be valid together when only one is patched.
+        merged = {name: getattr(model, name) for name in Preset.model_fields}
+        Preset.model_validate({**merged, **payload})
     except ValidationError as exc:
         return api_error_response(
             "Failed to validate preset.",
@@ -168,7 +172,6 @@ async def presets_patch(request: Request, encoder: Encoder, notify: EventBus, re
             params={"resource": "api.resources.preset", "field": "api.fields.name"},
         )
 
-    payload = validated.model_dump(exclude_unset=True)
     payload.pop("default", None)
     updated = _serialize(await repo.update(model.id, payload))
     notify.emit(

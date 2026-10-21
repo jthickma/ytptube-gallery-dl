@@ -88,6 +88,7 @@ class StatusTracker:
         self._last_progress_time: float = 0.0
         self._pending_progress: bool = False
         self._progress_interval: float = 0.5
+        self._gallery_file_indices: dict[str, int] | None = None
 
     def _progress_payload(self) -> dict:
         return {
@@ -257,17 +258,39 @@ class StatusTracker:
 
         if status.get("action") in {"file", "files"}:
             incoming = status.get("files", []) if status["action"] == "files" else [status["file"]]
-            existing = {file["filename"]: file for file in self.info.files}
-            existing.update({file["filename"]: file for file in incoming})
             base = Path(self.download_dir).resolve()
-            self.info.files = [
-                file
-                for file in existing.values()
-                if (base / file["filename"]).resolve().is_relative_to(base) and (base / file["filename"]).is_file()
-            ]
+            if status["action"] == "files" or self._gallery_file_indices is None:
+                # Reconcile restored history once, then again after native
+                # postprocessors may have replaced media with ZIP/CBZ output.
+                existing = {file["filename"]: file for file in self.info.files}
+                existing.update({file["filename"]: file for file in incoming})
+                self.info.files = [
+                    file
+                    for file in existing.values()
+                    if (base / file["filename"]).resolve().is_relative_to(base) and (base / file["filename"]).is_file()
+                ]
+                self._gallery_file_indices = {file["filename"]: index for index, file in enumerate(self.info.files)}
+                self.info.file_size = sum(file.get("size", 0) for file in self.info.files)
+            else:
+                record = incoming[0]
+                filename = record["filename"]
+                path = (base / filename).resolve()
+                index = self._gallery_file_indices.get(filename)
+                if path.is_relative_to(base) and path.is_file():
+                    previous_size = 0
+                    if index is None:
+                        self._gallery_file_indices[filename] = len(self.info.files)
+                        self.info.files.append(record)
+                    else:
+                        previous_size = self.info.files[index].get("size", 0)
+                        self.info.files[index] = record
+                    self.info.file_size = (self.info.file_size or 0) + record.get("size", 0) - previous_size
+                elif index is not None:
+                    previous = self.info.files.pop(index)
+                    self.info.file_size = (self.info.file_size or 0) - previous.get("size", 0)
+                    self._gallery_file_indices = {file["filename"]: i for i, file in enumerate(self.info.files)}
             self.info.gallery_count = len(self.info.files)
             self.info.is_gallery = True
-            self.info.file_size = sum(file.get("size", 0) for file in self.info.files)
             if self.info.files:
                 self.info.filename = self.info.files[0]["filename"]
             if status["action"] == "files":

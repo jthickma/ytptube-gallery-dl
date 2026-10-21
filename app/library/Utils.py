@@ -21,7 +21,7 @@ ALLOWED_SUBS_EXTENSIONS: set[str] = {".srt", ".vtt", ".ass"}
 FILES_TYPE: list = [
     {"rx": re.compile(r"\.(avi|ts|mkv|mp4|mp3|mpv|ogm|m4v|webm|m4b)$", re.IGNORECASE), "type": "video"},
     {"rx": re.compile(r"\.(mp3|flac|aac|opus|wav|m4a)$", re.IGNORECASE), "type": "audio"},
-    {"rx": re.compile(r"\.(srt|ass|ssa|smi|sub|idx)$", re.IGNORECASE), "type": "subtitle"},
+    {"rx": re.compile(r"\.(vtt|srt|ass|ssa|smi|sub|idx)$", re.IGNORECASE), "type": "subtitle"},
     {"rx": re.compile(r"\.(jpg|jpeg|png|gif|bmp|webp)$", re.IGNORECASE), "type": "image"},
     {"rx": re.compile(r"\.(txt|nfo|md|json|yml|yaml|plexmatch)$", re.IGNORECASE), "type": "text"},
     {"rx": re.compile(r"\.(nfo|json|jpg|torrent|\.info\.json)$", re.IGNORECASE), "type": "metadata"},
@@ -30,6 +30,23 @@ FILES_TYPE: list = [
 
 TAG_REGEX: re.Pattern[str] = re.compile(r"%{([^:}]+)(?::([^}]*))?}c")
 "Regex to find tags in templates."
+
+
+def resolve_secret(value: str, *, base_dir: Path | None = None) -> str:
+    if not value.startswith("file:"):
+        return value
+    path = Path(value[5:])
+    if base_dir is not None and not path.is_absolute():
+        path = base_dir / path
+    try:
+        content = path.read_text(encoding="utf-8").strip()
+    except OSError as exc:
+        msg = f"secret file {str(path)!r} is unreadable: {exc}"
+        raise ValueError(msg) from exc
+    if not content:
+        msg = f"secret file {str(path)!r} is empty"
+        raise ValueError(msg)
+    return content
 
 
 def timed_lru_cache(ttl_seconds: float, max_size: int = 128):

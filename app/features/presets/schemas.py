@@ -70,7 +70,7 @@ class Preset(BaseModel):
         try:
             from app.features.ytdlp.utils import arg_converter
 
-            if info.data.get("engine") == "gallerydl":
+            if (info.data.get("engine") or (info.context or {}).get("engine")) == "gallerydl":
                 from app.features.gallerydl.opts import gallerydl_arg_converter
 
                 gallerydl_arg_converter(value)
@@ -93,9 +93,10 @@ class Preset(BaseModel):
         return self._cookies_file
 
 
-class PresetPatch(Preset):
+class PresetPatch(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, from_attributes=True)
 
+    id: int | None = None
     name: str | None = None
     description: str | None = None
     folder: str | None = None
@@ -104,7 +105,13 @@ class PresetPatch(Preset):
     engine: Literal["auto", "ytdlp", "gallerydl"] | None = None
     gallerydl: str | None = None
     cli: str | None = None
+    default: bool = False
     priority: int | None = None
+
+    _normalize_name = field_validator("name", mode="before")(Preset._normalize_name)
+    _normalize_priority = field_validator("priority", mode="before")(Preset._normalize_priority)
+    _validate_gallerydl = field_validator("gallerydl")(Preset._validate_gallerydl)
+    _validate_cli = field_validator("cli", mode="before")(Preset._validate_cli)
 
 
 class PresetList(BaseModel):
