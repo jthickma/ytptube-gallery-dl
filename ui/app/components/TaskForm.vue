@@ -319,7 +319,7 @@
             </template>
 
             <template #description>
-              {{ t('common.outputTemplateDesc') }}
+              {{ galleryMode ? t('gallery.templateHelp') : t('common.outputTemplateDesc') }}
             </template>
 
             <UInput
@@ -329,7 +329,9 @@
               type="text"
               :disabled="addInProgress"
               :placeholder="
-                getDefault('template', config.app.output_template || '%(title)s.%(ext)s')
+                galleryMode
+                  ? getDefault('template', t('gallery.nativeTemplate'))
+                  : getDefault('template', config.app.output_template || '%(title)s.%(ext)s')
               "
               size="lg"
               class="w-full"
@@ -512,6 +514,7 @@
 </template>
 
 <script lang="ts" setup>
+import { useGalleryTemplate } from '~/composables/useGalleryTemplate';
 import { useStorage } from '@vueuse/core';
 import { CronExpressionParser } from 'cron-parser';
 import { convertGalleryOptions, detectDownloadEngine } from '~/utils/download-engine';
@@ -591,6 +594,12 @@ const CHANNEL_REGEX =
 const GENERIC_RSS_REGEX = /\.(rss|atom)(\?.*)?$|handler=rss/i;
 
 const form = reactive<TaskFormData>(createDefaultTask(props.task));
+const galleryMode = computed(
+  () =>
+    form.engine === 'gallerydl' ||
+    (form.engine !== 'ytdlp' && findPreset(form.preset || '')?.engine === 'gallerydl'),
+);
+useGalleryTemplate(toRef(form, 'template'), galleryMode);
 const timerError = ref('');
 const action = useFormSubmit();
 

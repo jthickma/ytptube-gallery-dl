@@ -16,7 +16,10 @@ Use an image built from this fork; the upstream YTPTube image does not contain t
 One source URL produces one queue/history item with multiple files. Native gallery-dl source
 folders and filenames are preserved beneath the selected download folder. Leave the filename
 field empty for native behavior; custom templates use `{filename}.{extension}` syntax,
-not yt-dlp's `%(...)s` syntax. Options accept gallery-dl CLI flags or a JSON configuration object:
+not yt-dlp's `%(...)s` syntax. Selecting gallery-dl or a gallery preset clears a retained
+yt-dlp filename override in the download and task forms, allowing the gallery preset or native
+filename to apply. Valid gallery-dl filename overrides are preserved.
+Options accept gallery-dl CLI flags or a JSON configuration object:
 
 ```text
 --write-metadata --range 1-50 -o videos=false

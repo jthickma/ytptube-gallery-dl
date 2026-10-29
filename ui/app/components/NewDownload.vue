@@ -284,12 +284,13 @@
                 :disabled="addInProgress"
                 :placeholder="
                   galleryMode
-                    ? t('gallery.nativeTemplate')
+                    ? getDefault('template', t('gallery.nativeTemplate'))
                     : getDefault('template', config.app.output_template || '%(title)s.%(ext)s')
                 "
               >
                 <template #description>
-                  <span>
+                  <span v-if="galleryMode">{{ t('gallery.templateHelp') }}</span>
+                  <span v-else>
                     {{ t('common.outputTemplateDescPrefix')
                     }}<NuxtLink
                       target="_blank"
@@ -590,6 +591,7 @@
 <script setup lang="ts">
 import { useStorage, watchDebounced } from '@vueuse/core';
 import { convertGalleryOptions, detectDownloadEngine } from '~/utils/download-engine';
+import { galleryTemplate, useGalleryTemplate } from '~/composables/useGalleryTemplate';
 import TextareaAutocomplete from '~/components/TextareaAutocomplete.vue';
 import TextDropzone from '~/components/TextDropzone.vue';
 import PlaylistPicker from '~/components/PlaylistPicker.vue';
@@ -816,6 +818,13 @@ const galleryMode = computed(
       (findPreset(form.value.preset || '')?.engine === 'gallerydl' ||
         detectedEngine.value === 'gallerydl')),
 );
+useGalleryTemplate(
+  computed({
+    get: () => form.value.template || '',
+    set: (value) => (form.value.template = value),
+  }),
+  galleryMode,
+);
 watchDebounced(
   () => [form.value.url, form.value.engine, form.value.preset],
   async () => {
@@ -1038,7 +1047,7 @@ const addDownload = async () => {
       gallerydl: form.value.gallerydl || '',
       preset: form.value.preset || config.app.default_preset,
       folder: form.value.folder,
-      template: form.value.template,
+      template: galleryTemplate(form.value.template, engines[index] === 'gallerydl'),
       cookies: form.value.cookies,
       cli: engines[index] === 'gallerydl' ? (form.value.cli || '').trim() : form_cli,
       auto_start: auto_start.value,
@@ -1345,7 +1354,11 @@ const testDownloadOptions = async (): Promise<void> => {
     ) {
       const response = await request('/api/gallery-dl/options/', {
         method: 'POST',
-        body: JSON.stringify({ ...form.value, url: splitUrls(form.value.url)[0] }),
+        body: JSON.stringify({
+          ...form.value,
+          template: galleryTemplate(form.value.template, true),
+          url: splitUrls(form.value.url)[0],
+        }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(await parse_api_error(data));
@@ -1481,7 +1494,12 @@ const getEngineInfo = async () => {
     testResultsData.value = null;
     const response = await request('/api/gallery-dl/url/info/', {
       method: 'POST',
-      body: JSON.stringify({ ...form.value, url: splitUrls(form.value.url)[0], limit: 200 }),
+      body: JSON.stringify({
+        ...form.value,
+        template: galleryTemplate(form.value.template, true),
+        url: splitUrls(form.value.url)[0],
+        limit: 200,
+      }),
     });
     const data = await response.json();
     if (!response.ok) throw new Error(await parse_api_error(data));
