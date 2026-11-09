@@ -954,6 +954,14 @@
       </template>
     </UModal>
 
+    <ToolboxCreateModal
+      v-if="toolboxSource !== null"
+      :file="toolboxSource"
+      @close="toolboxSource = null"
+      @created="showToolboxJob"
+    />
+    <ToolboxJobModal v-if="toolboxJob" :id="toolboxJob" @close="toolboxJob = null" />
+
     <LazyGetInfo
       v-if="info_view.url"
       :link="info_view.url"
@@ -967,6 +975,8 @@
 
 <script setup lang="ts">
 import { toRaw } from 'vue';
+import ToolboxCreateModal from '~/components/ToolboxCreateModal.vue';
+import ToolboxJobModal from '~/components/ToolboxJobModal.vue';
 import { useStorage } from '@vueuse/core';
 import { useConfirm } from '~/composables/useConfirm';
 import { useDirtyCloseGuard } from '~/composables/useDirtyCloseGuard';
@@ -1000,6 +1010,7 @@ import { usePageShell } from '~/composables/usePageShell';
 import { useFormHandoff } from '~/composables/useFormHandoff';
 import { useRangeSelection } from '~/composables/useRangeSelection';
 import { taskSourceUrl } from '~/utils/taskDetails';
+import type { ToolboxJob } from '~/types/toolbox';
 const { locale, t } = useI18n();
 
 const config = useYtpConfig();
@@ -1011,6 +1022,12 @@ const { confirmDialog, promptDialog } = useDialog();
 const { toggleExpand, expandClass } = useExpandableMeta();
 const { canShare, shareUrl } = useWebShare();
 const downloadFormHandoff = useFormHandoff<item_request>('download');
+const toolboxSource = ref<string | null>(null);
+const toolboxJob = ref<number | null>(null);
+const showToolboxJob = (job: ToolboxJob): void => {
+  toolboxSource.value = null;
+  toolboxJob.value = job.id;
+};
 const {
   items: historyItems,
   pagination,
@@ -1318,6 +1335,16 @@ const itemActionGroups = (item: StoreItem): Array<Array<Record<string, unknown>>
   const mediaActions: Array<Record<string, unknown>> = [];
 
   if (item.filename) {
+    if (item.status === 'finished') {
+      mediaActions.push({
+        label: t('toolbox.title'),
+        icon: 'i-lucide-wrench',
+        onSelect: () => {
+          toolboxSource.value = getItemPath(item);
+        },
+      });
+    }
+
     mediaActions.push({
       label: item.engine === 'gallerydl' ? t('gallery.view') : t('common.playVideo'),
       icon: 'i-lucide-play',
