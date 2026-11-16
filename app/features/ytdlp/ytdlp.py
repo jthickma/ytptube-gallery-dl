@@ -1,12 +1,9 @@
 # flake8: noqa: F401, RUF100, W291, I001
-import importlib
 import sys
-from pathlib import Path
 from typing import Any
 
 import yt_dlp
-from yt_dlp.globals import plugin_dirs
-from yt_dlp.plugins import load_all_plugins
+from yt_dlp.globals import extractors as ytdlp_extractors
 from yt_dlp.utils import make_archive_id
 
 from app.features.media.service import MediaHandler
@@ -65,12 +62,11 @@ class YTDLP(yt_dlp.YoutubeDL):
 
         if not YTDLP._registered:
             try:
-                # Plugin directories contain bundles; app/ contains our yt_dlp_plugins namespace.
-                directory = str(Path(__file__).resolve().parents[3])
-                if directory not in plugin_dirs.value:
-                    plugin_dirs.value.append(directory)
-                    importlib.invalidate_caches()
-                load_all_plugins()
+                from app.yt_dlp_plugins.extractor import generic_browser
+                from app.yt_dlp_plugins.postprocessor.nfo_maker import NFOMakerPP
+                from yt_dlp.postprocessor import postprocessors
+
+                postprocessors.value.update({"NFOMakerPP": NFOMakerPP})
                 YTDLP._registered = True
             except Exception:
                 get_logger().exception("Failed to register yt-dlp plugins")

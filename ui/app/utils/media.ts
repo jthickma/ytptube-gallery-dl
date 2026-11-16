@@ -4,8 +4,6 @@ import { ensure_api_success, parse_api_response, request } from '~/utils';
 const KEY = 'video:';
 let cache: ReturnType<typeof useLocalCache> | null = null;
 
-const progressKey = (id: string, file: string): string => id || (file ? `file:${file}` : '');
-
 const getCache = (): ReturnType<typeof useLocalCache> => {
   if (!cache) {
     cache = useLocalCache();
@@ -51,8 +49,6 @@ const clear = (id: string | null | undefined, scope: string | null = 'shared'): 
 };
 
 const readRemote = async (id: string): Promise<number | null | undefined> => {
-  if (!id) return undefined;
-
   try {
     const response = await request(`/api/playback/${id}`, { timeout: 5 });
     await ensure_api_success(response);
@@ -65,8 +61,6 @@ const readRemote = async (id: string): Promise<number | null | undefined> => {
 };
 
 const saveRemote = async (id: string, time: number | null): Promise<boolean> => {
-  if (!id) return false;
-
   try {
     const response = await request(`/api/playback/${id}`, {
       method: 'PUT',
@@ -127,4 +121,4 @@ const clampResumeTime = (
 
   return time;
 };
-export { clampResumeTime, clear, nearEnd, progressKey, read, readRemote, save, saveRemote };
+export { clampResumeTime, clear, nearEnd, read, readRemote, save, saveRemote };
